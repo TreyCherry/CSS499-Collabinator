@@ -1,0 +1,39 @@
+/* General Page Styles */
+:root {
+	--black: #000000;
+	--white: #FFFFFF;
+	--dark-purple: #8786B0;
+	--vdark-purple: #645f87;
+	--light-purple: #A7A4D3; 
+	--light-green: #A7EEB2;
+	--dark-green: #58C699;
+}
+
+.login-box {
+	background-color: var(--light-purple);
+	border: none;
+	padding: 40px;
+	width: 300px;
+}
+.login-title {
+	color: var(--light-green); 
+	font-size: 50px;
+	text-align: center;
+	margin-bottom: 20px;
+}
+.login-field {
+	width: 93%;
+	padding: 10px;
+	margin-bottom: 15px;
+	border-radius: 5px;
+	border: none;
+}
+.login-button {
+	width: 100%;
+	padding: 10px;
+	background-color: var(--vdark-purple);
+	color: #FFFFFF;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
