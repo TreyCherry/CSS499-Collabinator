@@ -3,8 +3,6 @@
 import hashlib # For hashing passwords
 import sqlite3
 import os
-import hashlib
-import os
 from database import DatabaseInterface # assuming db and db_interface are the names of the database and the database interface objects respectively
 
 # Comment Management
