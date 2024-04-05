@@ -3,7 +3,8 @@
 import hashlib # For hashing passwords
 import sqlite3
 import os
-from database import DatabaseInterface # assuming db and db_interface are the names of the database and the database interface objects respectively
+#from database import DatabaseInterface # assuming db and db_interface are the names of the database and the database interface objects respectively
+from . import db
 
 # Comment Management
 class CommentManager:
@@ -83,7 +84,7 @@ class UserManager:
     def update_user(self, user_id, new_details):
         # Assuming new_details is a dict containing what needs to be updated
         updates = ', '.join(f"{key} = ?" for key in new_details.keys())
-        query = f'''UPDATE Employee SET {updates} WHERE employee_id = ?'''
+        query = f'''UPDATE Employee SET {u1pdates} WHERE employee_id = ?'''
         params = tuple(new_details.values()) + (user_id,)
         self.db_interface.execute_query(query, params)
 
