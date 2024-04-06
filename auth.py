@@ -19,7 +19,7 @@ def login_post():
     password = request.form.get('InputPassword')
     #remember = True if request.form.get('remember') else False
 
-    user = User.query.filter_by(email=username).first()
+    user = User.query.filter_by(username=username).first()
 
     #check if user actually exists
     #take user-supplied password, hash it, comapare to hashed pw in db
@@ -35,7 +35,7 @@ def login_post():
     #if above check passes, then we know the user has the right credentials
     #login_user(user, remember=remember)
     login_user(user)
-    return redirect(url_for('main.profile'))
+    return redirect(url_for('main.settings'))
 
 
 @auth.route('/signup')
@@ -45,19 +45,20 @@ def signup():
 @auth.route('/signup', methods=['POST'])
 def signup_post():
     #code to validate and add user to db goes here
-    email = request.form.get('email')
-    name = request.form.get('name')
+    username = request.form.get('username')
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
     password = request.form.get('password')
 
 
-    user = User.query.filter_by(email=email).first() #query db to see if it returns a user, meaning the email is already used
+    user = User.query.filter_by(username=username).first() #query db to see if it returns a user, meaning the email is already used
 
     if user: #redirect to signup to try a different email
         flash('Email address already exists')
         return redirect(url_for('auth.signup'))
     
     #create new user with form data. Hask password
-    new_user = User(email=email, name=name, password=generate_password_hash(password, method='pbkdf2:sha256'))
+    new_user = User(username=username, first_name=first_name, last_name=last_name, password=generate_password_hash(password, method='pbkdf2:sha256'))
 
     #add new user to db
     db.session.add(new_user)
@@ -65,8 +66,8 @@ def signup_post():
 
     return redirect(url_for('auth.login'))
 
-@auth.route('/logout')
+@auth.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('main.index'))
+    return redirect(url_for('main.landing'))
