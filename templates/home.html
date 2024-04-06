@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="CollabStyle.css">
+<title>Collabinator</title>
+</head>
+<style>
+body{
+background-color:var(--light-purple);
+}
+</style>
+
+<body>
+
+<!-- Header -->
+<div class="top-bar">
+	
+	<button class="home-button" type="submit">Home</button>
+	<button class="company-button" type="submit">Company</button>
+	<button class="username-button" type="submit">{{username}}</button>
+	
+</div>
+<div class="side-bar">
+	<!-- make top not button -->
+	<h2 class="tab-head">Navigation</h2>
+	<button class="nav-button" type="submit">All Documents</button>
+	<button class="nav-button" type="submit">Your Documents</button>
+	
+</div>
+
+<!-- Main Content -->
+<div class="display-port">
+
+  <!-- Documents Section -->
+  <div class="main-content">
+    <h2 class="tab-head">Documents</h2>
+	<!--Make buttons using php -->
+	<button class="doc-button" type="submit">
+		<div class="doc-field">Document</div>
+		<div class="author-field">Author</div>
+		<div class="state-field">State</div>
+	</button>
+  </div>
+
+</div>
+
+</body>
+</html>
