@@ -29,12 +29,12 @@ class DataGate:
             self.connection.commit()
             
         
-    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)
+    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin):
         data = [(name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)]
         self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?,?,?,?,?,?);", data)
     
     
-    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)
+    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin):
         data = [(name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)]
         self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?,?,?,?,?,?);", data)    
 
