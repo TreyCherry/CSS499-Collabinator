@@ -1,21 +1,21 @@
 import sqlite3
-import os.path.isfile
+from os.path import isfile
 from urllib.request import pathname2url
 
 databaseName = "collabin.db"
     
     
 class DataGate:
-    def __init__():
+    def __init__(self):
         
         #try to open database, make it if it doesn't exist
-        if os.path.isfile(databaseName):
+        if isfile(databaseName):
             self.connection = sqlite3.connect(databaseName)
-            self.cur = connection.cursor()
+            self.cur = self.connection.cursor()
         #first time
         else:
             self.connection = sqlite3.connect(databaseName)
-            self.cur = connection.cursor()
+            self.cur = self.connection.cursor()
             self.cur.execute("CREATE TABLE Role(role_id INT PRIMARY KEY, role_name TEXT NOT NULL, upload INT NOT NULL, approved INT NOT NULL, select_reviewers INT NOT NULL,  read_only INT NOT NULL, comment INT NOT NULL, respond INT NOT NULL,resolved INT NOT NULL, upload_update INT NOT NULL, close_comment INT NOT NULL, close_review INT NOT NULL, is_admin INT NOT NULL);")
             self.cur.execute("CREATE TABLE Employee(employee_id INTEGER PRIMARY KEY, employee_username TEXT NOT NULL, employee_hash TEXT NOT NULL, employee_salt TEXT NOT NULL, employee_first_name TEXT NOT NULL, employee_last_name TEXT NOT NULL, employee_role INT NOT NULL, FOREIGN KEY(employee_role) REFERENCES Role(role_id));")           
             self.cur.execute("CREATE TABLE Document(document_id INT PRIMARY KEY, document_file_name TEXT NOT NULL, is_pdf INT NOT NULL, document_stage INT NOT NULL, assigned_employee INT, FOREIGN KEY(assigned_employee) REFERENCES Employee(employee_id));")
@@ -26,7 +26,7 @@ class DataGate:
 
             #figure out how we are getting initial account. Need to add hash function here.
             self.cur.execute("INSERT INTO Employee VALUES(\"Admin\",1,1,1,1,1,1,1,1,1,1,1);")
-            connection.commit()
+            self.connection.commit()
             
         
     def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)
