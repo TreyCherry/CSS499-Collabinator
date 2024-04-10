@@ -20,7 +20,8 @@ class DataGate:
             self.cur.execute("CREATE TABLE Employee(employee_id INTEGER PRIMARY KEY, employee_username TEXT NOT NULL, employee_hash TEXT NOT NULL, employee_salt TEXT NOT NULL, employee_first_name TEXT NOT NULL, employee_last_name TEXT NOT NULL, employee_role INT NOT NULL, FOREIGN KEY(employee_role) REFERENCES Role(role_id));")           
             self.cur.execute("CREATE TABLE Document(document_id INT PRIMARY KEY, document_file_name TEXT NOT NULL, is_pdf INT NOT NULL, document_stage INT NOT NULL, assigned_employee INT, FOREIGN KEY(assigned_employee) REFERENCES Employee(employee_id));")
             self.cur.execute("CREATE TABLE Comment(comment_id INT PRIMARY KEY, doc_id INT NOT NULL, commenter_id INT NOT NULL, parent_id INT, comment_text TEXT NOT NULL, comment_time TEXT NOT NULL, closed INT NOT NULL, FOREIGN KEY(parent_id) REFERENCES Comment(comment_id),FOREIGN KEY(doc_id) REFERENCES Document(document_id), FOREIGN KEY(commenter_id) REFERENCES Employee(employee_id));")
-            self.cur.execute("CREATE TABLE Alert(role_id INT PRIMARY KEY, recepient_id INT NOT NULL, message_cont TEXT NOT NULL, FOREIGN KEY(recepient_id) REFERENCES Employee(employee_id));")
+            
+            self.cur.execute("CREATE TABLE Alert(alert_id INT PRIMARY KEY, recepient_id INT NOT NULL, message_cont TEXT NOT NULL, FOREIGN KEY(recepient_id) REFERENCES Employee(employee_id));")
             self.cur.execute("INSERT INTO Role VALUES(\"Admin\",1,1,1,1,1,1,1,1,1,1,1);")
             
 
@@ -29,20 +30,37 @@ class DataGate:
             connection.commit()
             
         
-    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)
+    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin):
         data = [(name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)]
         self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?,?,?,?,?,?);", data)
     
-    
-    def addRole(self, name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)
-        data = [(name, upload, approved, select_reviewers, read_only, comment, respond,resolved, upload_update, close_comment, close_review, is_admin)]
-        self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?,?,?,?,?,?);", data)    
+    def addEmployee(self, employee_username, employee_hash, employee_salt, employee_first_name, employee_last_name, employee_role):
+        data = [(name, employee_username, employee_hash, employee_salt, employee_first_name, employee_last_name, employee_role)]
+        self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?);", data)    
 
+    def addDocument(self, document_id, document_file_name, is_pdf, document_stage, assigned_employee):
+        data = [(name, document_id, document_file_name, is_pdf, document_stage, assigned_employee)]
+        self.cur.execute("INSERT INTO Document VALUES(?,?,?,?,?);", data)    
     
+    def addComment(self,comment_id, doc_id, commenter_id, comment_text, comment_time, closed):
+        #this probably needs to be edited to make sure it adds the null value correctly
+        data = [(comment_id, doc_id, commenter_id, "NULL", comment_text, comment_time, closed)]
+        self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?);", data)
+    
+    def addCommentChild(self,comment_id, doc_id, commenter_id, parent_id, comment_text, comment_time, closed):
+        data = [(comment_id, doc_id, commenter_id, parent_id, comment_text, comment_time, closed)]
+        self.cur.execute("INSERT INTO Role VALUES(?,?,?,?,?,?,?);", data)
+    
+    
+    def addAlert(self, recepient_id, message_cont):
+        data = [(recepient_id, message_cont)]
+        self.cur.execute("INSERT INTO Role VALUES(?,?);", data)
+
+    #def getRoles():
 
 
     def execute_query(self, query, value):
-        self.cur.execute(query, value)
+        return self.cur.execute(query, value)
 
 
 
