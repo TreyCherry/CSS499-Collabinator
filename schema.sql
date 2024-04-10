@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS Roles;
 DROP TABLE IF EXISTS States;
+DROP TABLE IF EXISTS RoleStates;
 DROP TABLE IF EXISTS Documents;
 DROP TABLE IF EXISTS Logs;
 DROP TABLE IF EXISTS ResetTokens;
@@ -15,7 +16,7 @@ CREATE TABLE Users (
     date_registered TEXT NOT NULL,
     last_login INTEGER NOT NULL,
     is_active INTEGER NOT NULL,
-    FOREIGN KEY (role_id) REFERENCES Role(role_id)
+    FOREIGN KEY (role_id) REFERENCES Roles(role_id)
 );
 
 CREATE TABLE Roles (
@@ -29,6 +30,12 @@ CREATE TABLE States (
     state_id INTEGER PRIMARY KEY AUTOINCREMENT,
     state_name TEXT UNIQUE NOT NULL,
     description TEXT
+)
+
+CREATE TABLE RoleStates (
+    role_state_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    FOREIGN KEY (role_id) REFERENCES Roles(role_id),
+    FOREIGN KEY (state_id) REFERENCES States(state_id)
 )
 
 CREATE TABLE Documents (
