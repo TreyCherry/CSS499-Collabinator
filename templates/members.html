@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="main-display">
+        <h1>{% block title %}Members{% endblock %}</h1>
+        <ul>
+            {% for member in members %}
+                <li>
+                    <ul>
+                        <li>{{ member["first_name"] }}</li>
+                        <li>{{ member["last_active"] }}</li>
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

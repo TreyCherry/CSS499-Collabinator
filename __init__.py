@@ -1,22 +1,56 @@
 #dependencies: (pip installs)
 #   flask, flask-sqlalchemy, flask-login
+import os
 
-
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask import Flask, send_from_directory
+#from flask_sqlalchemy import SQLAlchemy
+#from flask_login import LoginManager
 
 #can replace this with whatever db instantiation we need later
-db = SQLAlchemy()
+#db = SQLAlchemy()
 
-def create_app():
-    app = Flask(__name__)
+def create_app(test_config=None):
+    app = Flask(__name__, instance_relative_config=True)
 
-    app.config['SECRET_KEY'] = 'secret-key-goes-here'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+    app.config.from_mapping(
+        SECRET_KEY='dev',
+        DATABASE=os.path.join(app.instance_path, 'CS499-Collabinator.sqlite')
+    )
 
+    if test_config is None:
+        app.config.from_pyfile('config.py', silent=True)
+
+    else:
+        app.config.from_mapping(test_config)
+
+    #b.init_app(app)
+
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
+
+    from . import db
     db.init_app(app)
 
+    from . import auth
+    app.register_blueprint(auth.bp)
+
+    from . import workflow
+    app.register_blueprint(workflow.bp)
+    app.add_url_rule('/', endpoint='index')
+
+    from . import members
+    app.register_blueprint(members.bp, url_prefix=None)
+    app.add_url_rule('/members', endpoint='members')
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+    return app
+
+    '''
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
@@ -37,3 +71,4 @@ def create_app():
     app.register_blueprint(main_blueprint)
 
     return app
+    '''

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="display-box register">
+        <h1>{% block title %}Register{% endblock %}</h1>
+        <h2>Set up your account</h2>
+        <form class="signinform" method="post">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <input name="first_name" placeholder="First Name" required>
+            <input name="last_name" placeholder="Last Name" required>
+            <span>* You will need to be approved by an administrator to complete registration</span>
+            <button type="submit">Register</button>
+        </form>
+    </div>
+{% endblock %}
