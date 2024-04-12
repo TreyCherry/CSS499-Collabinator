@@ -18,7 +18,7 @@ def members():
         return redirect(url_for('members.editMember'))
 
     members = get_users()
-    return render_template('members.html', members=members, activeNav="members")
+    return render_template('manage/members.html', members=members, activeNav="members")
 
 @bp.route('/members/edit', methods=('GET', 'POST'))
 @login_required
@@ -35,4 +35,4 @@ def editMember():
 
     member = get_user_by_id(targetid)
     roles = get_roles()
-    return render_template('editMember.html', activeNav="members", member=member, roles=roles)
+    return render_template('manage/editMember.html', activeNav="members", member=member, roles=roles)
