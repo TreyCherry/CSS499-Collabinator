@@ -61,8 +61,37 @@ body {
 	color: var(--dark-green);
 }
 
-.display-box form {
+.main-content {
 	margin-top: 5rem;
+}
+
+table.main-content {
+	width: 100%;
+	margin-top: 3rem;
+	font-size: 1.2rem;
+}
+
+table.main-content, table.main-content td, th {
+	border: var(--darker-purple) 1px solid;
+	border-collapse: collapse;
+}
+
+table.main-content td, th {
+	padding: 0.5rem;
+}
+
+table.main-content thead {
+	background-color: var(--dark-purple);
+}
+
+table.main-content tr:hover:not(thead tr) {
+	background-color: var(--vdark-purple);
+}
+
+.memberlist {
+	width: 90rem;
+	padding: 0 !important;
+	margin-top: 4rem;
 }
 
 .display-box input {
@@ -71,6 +100,13 @@ body {
 	margin-bottom: 2rem;
 	border-radius: 5px;
 	border: none;
+}
+.display-box select {
+	font-size: 1rem;
+	color: var(--darker-purple);
+	padding: 0.75rem 1.2rem;
+	border-radius: 3px;
+	border: var(--darker-purple) 1px solid;
 }
 
 .register {

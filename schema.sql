@@ -4,25 +4,26 @@ DROP TABLE IF EXISTS Documents;
 DROP TABLE IF EXISTS Comments;
 DROP TABLE IF EXISTS Responses;
 DROP TABLE IF EXISTS DocRoleStates;
-DROP TABLE IF EXISTS Logs;
+DROP TABLE IF EXISTS Alerts;
 DROP TABLE IF EXISTS ResetTokens;
 
 CREATE TABLE Roles (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     allowed_states INTEGER NOT NULL,
     role_name TEXT UNIQUE NOT NULL,
-    description TEXT
+    description TEXT,
+    role_type INTEGER NOT NULL
 );
 
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_id INTEGER,
+    role_id INTEGER NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     salt TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    date_registered TEXT NOT NULL,
+    date_registered INT NOT NULL,
     last_active INTEGER,
     FOREIGN KEY (role_id) REFERENCES Roles(role_id)
 );
@@ -33,7 +34,7 @@ CREATE TABLE Documents (
     author_id INTEGER NOT NULL,
     document_name TEXT UNIQUE NOT NULL,
     document_filename TEXT UNIQUE NOT NULL,
-    date_created TEXT NOT NULL,
+    date_created INT NOT NULL,
     last_updated INT NOT NULL,
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
 );
@@ -43,7 +44,7 @@ CREATE TABLE Comments (
     document_id INTEGER NOT NULL,
     author_id INTEGER NOT NULL,
     comment TEXT NOT NULL,
-    date_created TEXT NOT NULL,
+    date_created INT NOT NULL,
     FOREIGN KEY (document_id) REFERENCES Documents(document_id),
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
 );
@@ -54,7 +55,7 @@ CREATE TABLE Responses (
     author_id INTEGER NOT NULL,
     response TEXT NOT NULL,
     resolved INTEGER NOT NULL,
-    date_created TEXT NOT NULL,
+    date_created INT NOT NULL,
     FOREIGN KEY (comment_id) REFERENCES Comments(comment_id),
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
 );
@@ -68,29 +69,35 @@ CREATE TABLE DocRoleStates (
     FOREIGN KEY (document_id) REFERENCES Documents(document_id)
 );
 
-CREATE TABLE Logs (
+CREATE TABLE Alerts (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     type TEXT NOT NULL,
-    time TEXT NOT NULL,
+    time INT NOT NULL,
     description TEXT,
-    FOREIGN KEY (user_id) REFERENCES Users(user_id)
-);
-
-CREATE TABLE ResetTokens (
-    token_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    expires INTEGER NOT NULL,
-    token TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
 INSERT INTO Roles (
     role_name,
     allowed_states,
-    description
+    description,
+    role_type
 ) VALUES (
     'Admin', 
     2047,
-    'Administrator'
+    'Administrator',
+    0
+);
+
+INSERT INTO Roles (
+    role_name,
+    allowed_states,
+    description,
+    role_type
+) VALUES (
+    'None', 
+    0,
+    'No Role',
+    2
 );

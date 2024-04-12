@@ -85,7 +85,9 @@ def init_db():
     )
     db.commit()
 
-
+def get_role(id):
+    db = get_db()
+    return db.execute('SELECT * FROM Roles WHERE role_id = ?', (id,)).fetchone()
 
 @click.command('init-db')
 def init_db_command():

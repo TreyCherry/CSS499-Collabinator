@@ -23,8 +23,6 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
-    #b.init_app(app)
-
     try:
         os.makedirs(app.instance_path)
     except OSError:
@@ -32,9 +30,11 @@ def create_app(test_config=None):
 
     from . import db
     db.init_app(app)
+    app.jinja_env.globals.update(get_role=db.get_role)
 
     from . import auth
     app.register_blueprint(auth.bp)
+    app.jinja_env.globals.update(date_format=auth.date_format)
 
     from . import workflow
     app.register_blueprint(workflow.bp)

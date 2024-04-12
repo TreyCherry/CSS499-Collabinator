@@ -1,0 +1,23 @@
+{% extends "auth/register.html" %}
+{% from "auth/register.html" import value %}
+
+
+{% block title %}Edit Member{% endblock %}
+
+{% block passwordinfo %}placeholder="New Password (unchanged)"{% endblock  %}
+
+{% block other %}
+
+<select name="role_id">
+    {% for role in roles %}
+        <option value="{{role['role_id']}}" {% if member and role["role_id"] == member["role_id"]%}selected{% endif %}>{{role["role_name"]}}</option>
+    {% endfor %}
+</select>
+{% endblock %}
+
+{% block submit %}Submit{% endblock %}
+{% block extrabutton %}
+<form method="post">
+    <button type="submit">Cancel</button>
+</form>
+{% endblock %}
