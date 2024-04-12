@@ -1,10 +1,11 @@
 import sqlite3
 
 import click
-from flask import current_app, g
-from werkzeug.security import generate_password_hash
+from flask import current_app, g, flash
+from werkzeug.security import generate_password_hash, gen_salt
 
 from dataclasses import dataclass
+import datetime
 
 @dataclass
 class State:
@@ -46,6 +47,18 @@ def make_stateint(ids):
     for id in ids:
         stateint += 1 << id
     return stateint
+
+def new_date():
+    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+def date_format(date):
+    components = []
+    for _ in range(5):
+        components.append(date % 100)
+        date = date // 100
+    components.append(date)
+    components.reverse()
+    return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components)
 
 def get_db():
     if 'db' not in g:
@@ -98,3 +111,91 @@ def init_db_command():
 def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+
+def get_user_by_id(id):
+    db = get_db()
+    return db.execute('SELECT * FROM Users WHERE user_id = ?', (id,)).fetchone()
+
+def get_user_by_email(email: str):
+    db = get_db()
+    return db.execute('SELECT * FROM Users WHERE email = ?', (email.lower(),)).fetchone()
+
+def get_users():
+    db = get_db()
+    return db.execute('SELECT * FROM Users').fetchall()
+
+def add_user(email: str, password, salt, role_id, first_name: str, last_name: str, date_registered):
+    db = get_db()
+    db.execute(
+        'INSERT INTO Users (email, password, salt, role_id, first_name, last_name, date_registered) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (email.lower(), generate_password_hash(password+salt), salt, role_id, first_name.title(), last_name.title(), date_registered)
+    )
+    db.commit()
+
+def update_user(user_id, new_details):
+    collumns = "email = ?, first_name = ?, last_name = ?, role_id = ?"
+    role = int(new_details["role_id"])
+    if int(user_id) == 1 and role != 1:
+        role = 1
+        flash("Default admin account role cannot be changed")
+    values = [new_details["email"].lower(), new_details["first_name"].title(), new_details["last_name"].title(), role]
+    if new_details["password"] != "":
+        collumns += ", password = ?, salt = ?"
+        salt = gen_salt()
+        values.append(generate_password_hash(new_details["password"]+salt))
+        values.append(salt)
+    values.append(user_id)
+    db = get_db()
+    query = "UPDATE Users SET " + collumns + " WHERE user_id = ?"
+    db.execute(query, tuple(values))
+    db.commit()
+
+def new_user(user_details):
+    if not user_details["email"]:
+        error = "Email is required"
+    elif not user_details["password"]:
+        error = "Password is required"
+    elif not user_details["first_name"]:
+        error = "First name is required"
+    elif not user_details["last_name"]:
+        error = "Last name is required"
+
+    salt = gen_salt()
+
+    collumns = "email, password, salt, role_id, first_name, last_name, date_registered"
+    collumnVals = [
+        user_details["email"].lower(), 
+        generate_password_hash(user_details["password"]+salt), 
+        salt, 2, user_details["first_name"].title(),  # role_id = 2 (None role)
+        user_details["last_name"].title(), new_date()
+    ]
+    delim = ", "
+    values = delim.join(str(val) for val in collumnVals)
+
+    if error is None:
+        try:
+            db = get_db()
+            db.execute(
+                'INSERT INTO Users (' + collumns + ') VALUES ' + values
+            )
+            db.commit()
+        except db.IntegrityError:
+            error = f"User {user_details['email']} is already registered."
+        else:
+            return error
+    return None
+
+def get_roles(type = None):
+    query = 'SELECT * FROM Roles ORDER BY role_type, role_name'
+    if type is not None:
+        query += ' WHERE role_type = ' + str(type)
+    db = get_db()
+    return db.execute(query).fetchall()
+
+def update_activity(user_id):
+    if user_id is not None:
+        db = get_db()
+        db.execute(
+            'UPDATE Users SET last_active = ? WHERE user_id = ?', (new_date(), user_id)
+        )
+        db.commit()

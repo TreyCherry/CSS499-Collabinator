@@ -31,10 +31,10 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
     app.jinja_env.globals.update(get_role=db.get_role)
+    app.jinja_env.globals.update(date_format=db.date_format)
 
     from . import auth
     app.register_blueprint(auth.bp)
-    app.jinja_env.globals.update(date_format=auth.date_format)
 
     from . import workflow
     app.register_blueprint(workflow.bp)
