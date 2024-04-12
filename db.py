@@ -34,7 +34,7 @@ def get_states(stateint):
     i=0
     while stateint > 0 and i < len(STATES):
         if stateint & 1:
-            states.append(STATES[stateint])
+            states.append(STATES[i])
         stateint = stateint >> 1
         i += 1
     return states
@@ -185,10 +185,14 @@ def new_user(user_details):
             return error
     return None
 
-def get_roles(type = None):
-    query = 'SELECT * FROM Roles ORDER BY role_type, role_name'
+def get_roles(type = None, invert = False):
+    query = 'SELECT * FROM Roles' 
     if type is not None:
-        query += ' WHERE role_type = ' + str(type)
+        query += ' WHERE '
+        if invert:
+            query += 'NOT '
+        query += 'role_type = ' + str(type)
+    query +=  ' ORDER BY role_type, role_name'
     db = get_db()
     return db.execute(query).fetchall()
 

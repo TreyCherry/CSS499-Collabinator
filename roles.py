@@ -4,7 +4,7 @@ from flask import (
 
 from .auth import login_required, manager_login_required
 from .db import (
-    get_roles
+    get_roles, STATES, get_states
 )
 
 bp = Blueprint('roles', __name__)
@@ -16,5 +16,7 @@ def roles():
     if request.method == 'POST':
         return
 
-    roles = get_roles()
-    return render_template('roles.html', roles=roles, activeNav="roles")
+    roles = get_roles(type=2, invert=True)
+
+
+    return render_template('manage/roles.html', roles=roles, activeNav="roles", states=STATES)

@@ -84,14 +84,90 @@ table.main-content thead {
 	background-color: var(--dark-purple);
 }
 
-table.main-content tr:hover:not(thead tr) {
+table.hover tr:hover:not(thead tr) {
 	background-color: var(--vdark-purple);
+}
+
+table.main-content input[type=text] {
+	margin: 1rem;
+	width: 70%;
+	text-align: center;
+}
+
+.checkbox {
+	display: block;
+	position: relative;
+	padding-left: 2.5rem;
+	margin-bottom: 1rem;
+	left: 50%;
+	transform: translateX(-12.5%);
+	cursor: pointer;
+	font-size: 1.2rem;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.checkbox input {
+	position: absolute;
+	opacity: 0;
+	cursor: pointer;
+	height: 0;
+	width: 0;
+}
+
+.checkmark {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 1.5rem;
+	width: 1.5rem !important;
+	background-color: var(--dark-purple);
+}
+
+.checkbox:hover input ~ .checkmark {
+	background-color: var(--darker-purple);
+}
+
+.checkbox input:checked ~ .checkmark {
+	background-color: var(--vdark-purple);
+}
+
+.checkmark:after {
+	content: "";
+	position: absolute;
+	display: none;
+}
+
+.checkbox input:checked ~ .checkmark:after {
+	display: block;
+}
+
+.checkbox .checkmark:after {
+	left: 0.5rem;
+	top: 0.25rem;
+	width: 0.25rem;
+	height: 0.5rem;
+	border: solid var(--light-green);
+	border-width: 0 3px 3px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
 }
 
 .memberlist {
 	width: 90rem;
 	padding: 0 !important;
 	margin-top: 4rem;
+}
+
+.col-index td:first-child {
+	background-color: var(--dark-purple) !important;
+}
+
+.col-index th:first-child {
+	background-color: var(--vdark-purple) !important;
 }
 
 .display-box input {

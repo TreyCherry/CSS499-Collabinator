@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="display-box memberlist">
+        <h1>{% block title %}Roles{% endblock %}</h1>
+        <form method="post">
+            <table class="main-content col-index">
+                <thead>
+                    <tr>
+                        <th>Role Name</th>
+                        {% for state in states %}
+                            <th>{{ state.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for role in roles %}
+                        <tr>
+                            <td><input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" required></td>
+                            {% for state in states %}
+                                <td>
+                                    <div class="checkbox">
+                                        <input
+                                        {% if role["role_type"] == 0 %}
+                                        name="{{ (role['role_id'] | string) + '-' + (state.id | string) }}" 
+                                        {% endif %}
+                                        type="checkbox" 
+                                        {% if check_state(role["allowed_states"], state.id) %}checked{%  endif %}
+                                        {% if role["role_type"] == 0 %}disabled{% endif %}
+                                        >
+                                        <span class="checkmark"></span>
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+
+    <script>
+        var lastInput = "";
+        document.addEventListener("focusout", (event) => {
+            if (document.activeElement != null && event.target.classList.contains("rolename") &&
+            event.target.value == "") {
+                event.target.value = lastInput;
+            }
+        });
+        document.addEventListener("focusin", (event) => {
+            if (document.activeElement != null && document.activeElement.classList.contains("rolename")) {
+                lastInput = document.activeElement.value;
+            }
+        });
+    </script>
+{% endblock %}
