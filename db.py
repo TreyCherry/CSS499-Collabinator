@@ -16,7 +16,7 @@ class State:
     
 # list of states for documents
 STATES = [
-    State(0, "Read Only", "read document"),
+    State(0, "Read", "read document"),
     State(1, "Upload", "upload documents"),
     State(2, "Approve", "approve documents for review"),
     State(3, "Select", "select reviewers"),
@@ -47,6 +47,10 @@ def make_stateint(ids):
     for id in ids:
         stateint += 1 << id
     return stateint
+
+def flip_states(stateint, ids):
+    newstates = make_stateint(ids)
+    return stateint ^ newstates
 
 def new_date():
     return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -82,21 +86,17 @@ def init_db():
     with current_app.open_resource('schema.sql') as f:
         db.executescript(f.read().decode('utf8'))
 
-    from .auth import new_salt, new_date
+    add_role("Admin", [i for i in range(11)], "Administrator", 0)
+    add_role("None", [], "No Role", 2)
 
     email = 'admin@collab.inator'
     password = 'admin'
-    salt = new_salt()
     role_id = 1
     first_name = 'Admin'
     last_name = 'Admin'
     date_registered = new_date()
 
-    db.execute(
-        'INSERT INTO Users (email, password, salt, role_id, first_name, last_name, date_registered) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        (email, generate_password_hash(password+salt), salt, role_id, first_name, last_name, date_registered)
-    )
-    db.commit()
+    add_user(email, password, role_id, first_name, last_name, date_registered)
 
 def get_role(id):
     db = get_db()
@@ -124,7 +124,9 @@ def get_users():
     db = get_db()
     return db.execute('SELECT * FROM Users').fetchall()
 
-def add_user(email: str, password, salt, role_id, first_name: str, last_name: str, date_registered):
+def add_user(email: str, password, role_id, first_name: str, last_name: str, date_registered):
+    salt = gen_salt(16)
+    
     db = get_db()
     db.execute(
         'INSERT INTO Users (email, password, salt, role_id, first_name, last_name, date_registered) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -141,7 +143,7 @@ def update_user(user_id, new_details):
     values = [new_details["email"].lower(), new_details["first_name"].title(), new_details["last_name"].title(), role]
     if new_details["password"] != "":
         collumns += ", password = ?, salt = ?"
-        salt = gen_salt()
+        salt = gen_salt(16)
         values.append(generate_password_hash(new_details["password"]+salt))
         values.append(salt)
     values.append(user_id)
@@ -149,41 +151,6 @@ def update_user(user_id, new_details):
     query = "UPDATE Users SET " + collumns + " WHERE user_id = ?"
     db.execute(query, tuple(values))
     db.commit()
-
-def new_user(user_details):
-    if not user_details["email"]:
-        error = "Email is required"
-    elif not user_details["password"]:
-        error = "Password is required"
-    elif not user_details["first_name"]:
-        error = "First name is required"
-    elif not user_details["last_name"]:
-        error = "Last name is required"
-
-    salt = gen_salt()
-
-    collumns = "email, password, salt, role_id, first_name, last_name, date_registered"
-    collumnVals = [
-        user_details["email"].lower(), 
-        generate_password_hash(user_details["password"]+salt), 
-        salt, 2, user_details["first_name"].title(),  # role_id = 2 (None role)
-        user_details["last_name"].title(), new_date()
-    ]
-    delim = ", "
-    values = delim.join(str(val) for val in collumnVals)
-
-    if error is None:
-        try:
-            db = get_db()
-            db.execute(
-                'INSERT INTO Users (' + collumns + ') VALUES ' + values
-            )
-            db.commit()
-        except db.IntegrityError:
-            error = f"User {user_details['email']} is already registered."
-        else:
-            return error
-    return None
 
 def get_roles(type = None, invert = False):
     query = 'SELECT * FROM Roles' 
@@ -203,3 +170,66 @@ def update_activity(user_id):
             'UPDATE Users SET last_active = ? WHERE user_id = ?', (new_date(), user_id)
         )
         db.commit()
+
+def remove_user(user_id):
+    db = get_db()
+    db.execute('DELETE FROM Users WHERE user_id = ?', (user_id,))
+    db.commit()
+
+def add_role(name, allowedStates, description, type=1):
+    collumns = "role_name, allowed_states, role_type"
+    qMarks = "?, ?, ?"
+    values = [name.title(), make_stateint(allowedStates), type]
+    if description.strip() != "":
+        collumns += ", description"
+        qMarks += ", ?"
+        values.append(description.strip())
+    db = get_db()
+    db.execute(
+        'INSERT INTO Roles (' + collumns + ') VALUES (' + qMarks + ')',
+        tuple(values)
+    )
+    db.commit()
+
+def update_role(id, name=None, states=None, description=None):
+    db = get_db()
+    
+    collums = ""
+    values = []
+    
+    if name is not None:
+        collums += "role_name = ?"
+        values.append(name)
+    if states is not None:
+        stateint = db.execute('SELECT allowed_states FROM Roles WHERE role_id = ?', (id,)).fetchone()["allowed_states"]
+        if collums != "":
+            collums += ", "
+        collums += "allowed_states = ?"
+        values.append(flip_states(stateint, states))
+    if description is not None:
+        if collums != "":
+            collums += ", "
+        collums += "description = ?"
+        values.append(description)
+    
+    if collums == "":
+        return False
+
+    values.append(id)
+
+    db.execute(
+        'UPDATE Roles SET ' + collums + ' WHERE role_id = ?',
+        tuple(values)
+    )
+    db.commit()
+
+    return True
+
+def remove_role(id):
+    db = get_db()
+
+    db.execute('UPDATE Users SET role_id = 2 WHERE role_id = ?', (id,))
+    db.commit()
+
+    db.execute('DELETE FROM Roles WHERE role_id = ?', (id,))
+    db.commit()

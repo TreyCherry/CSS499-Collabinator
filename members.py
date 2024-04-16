@@ -3,7 +3,9 @@ from flask import(
 )
 
 from .auth import login_required, manager_login_required
-from .db import update_user, get_users, get_user_by_id, get_roles
+from .db import (
+    get_db, update_user, get_users, get_user_by_id, get_roles, remove_user
+)
 
 bp = Blueprint('members', __name__, url_prefix='/')
 
@@ -25,11 +27,22 @@ def members():
 @manager_login_required
 def editMember():
     targetid = session.pop("target_id", None)
-    if targetid is None or request.method == 'POST':
-        if request.form.get("email", None) is None:
-            return redirect(url_for('members'))
-        update_user(targetid, request.form)
+    if targetid is None:
         return redirect(url_for('members'))
+    if request.method == 'POST':
+        if request.form.get("delete", None) is not None:
+            if request.form["delete"] == "1":
+                if targetid == "1":
+                    flash("Cannot delete root account.")
+                    return redirect(url_for('members'))
+                remove_user(targetid)
+            return redirect(url_for('members'))
+        try:
+            update_user(targetid, request.form)
+        except get_db().IntegrityError:
+            flash("Email already in use.")
+        else:
+            return redirect(url_for('members'))
 
     session["target_id"] = targetid
 

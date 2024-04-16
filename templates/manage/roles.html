@@ -3,7 +3,14 @@
 {% block content %}
     <div class="display-box memberlist">
         <h1>{% block title %}Roles{% endblock %}</h1>
-        <form method="post">
+        <form method="post" onsubmit="setChanged()">
+            <input id="changed" name="changed" type="hidden">
+            <input id="delete" name="delete" type="hidden">
+            <div class="top-control">
+                <span id="unsaved">*You have unsaved changes</span>
+                <button formaction="{{ url_for('roles.addRole') }}">Add Role</button>
+                <button id="role_submit" onclick="setSubmitting(this)" disabled>Submit Changes</button>
+            </div>
             <table class="main-content col-index">
                 <thead>
                     <tr>
@@ -16,19 +23,31 @@
                 <tbody>
                     {% for role in roles %}
                         <tr>
-                            <td><input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" required></td>
+                            <td class="savewrapper">
+                                <span class="star hidden">*</span>
+                                <i class="role-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i>
+                                <input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" default="{{ role['role_name'] }}" required>
+                                <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i>
+                                <div class="description savewrapper hidden">
+                                    <span class="star hidden">*</span>
+                                    <h3>Description</h3>
+                                    <i class="fa-solid fa-xmark min-icon" onclick="toggleDescription(this)"></i>
+                                    <textarea placeholder="Enter a description (optional)" name="{{ role['role_id'] }}-d" default="{% if role['description'] %}{{ role['description'] }}{% endif %}">{% if role['description'] %}{{ role['description'] }}{% endif %}</textarea>
+                                </div>
+                            </td>
                             {% for state in states %}
-                                <td>
+                                <td class="savewrapper">
+                                    <span class="star hidden">*</span>
                                     <div class="checkbox">
                                         <input
-                                        {% if role["role_type"] == 0 %}
+                                        {% if role["role_type"] != 0 %}
                                         name="{{ (role['role_id'] | string) + '-' + (state.id | string) }}" 
                                         {% endif %}
                                         type="checkbox" 
                                         {% if check_state(role["allowed_states"], state.id) %}checked{%  endif %}
-                                        {% if role["role_type"] == 0 %}disabled{% endif %}
+                                        {% if role["role_type"] == 0 or (state.id != 0 and not check_state(role["allowed_states"], 0) )%}disabled{% endif %}
                                         >
-                                        <span class="checkmark"></span>
+                                        <span class="checkmark" onclick="toggleCheck(this{% if state.id == 0 %}, disableRow{% endif %})"></span>
                                     </div>
                                 </td>
                             {% endfor %}
@@ -40,17 +59,106 @@
     </div>
 
     <script>
+        var openDesc = null;
+        var submitting = false;
         var lastInput = "";
+        var changelist = [];
+
+        window.addEventListener("beforeunload", (event) => {
+            if (changelist.length>0 && !submitting && !confirm())
+            event.preventDefault();
+        });
+
         document.addEventListener("focusout", (event) => {
-            if (document.activeElement != null && event.target.classList.contains("rolename") &&
-            event.target.value == "") {
-                event.target.value = lastInput;
+            if (event.target != null && event.target.classList.contains("rolename")) {
+                if (event.target.value == "") {
+                    event.target.value = lastInput;
+                }
+                setUnsaved(event.target);
             }
         });
         document.addEventListener("focusin", (event) => {
             if (document.activeElement != null && document.activeElement.classList.contains("rolename")) {
                 lastInput = document.activeElement.value;
+                setUnsaved(document.activeElement);
             }
         });
+        document.forms[0].addEventListener("keyup", (event) => {
+            if (event.target.tagName == "INPUT" || event.target.tagName == "TEXTAREA") {
+                setUnsaved(event.target);
+            }
+        });
+        document.forms[0].addEventListener("click", (event) => {
+            if (event.target.classList.contains("checkmark") && !event.target.parentElement.children[0].disabled) {
+                setUnsaved(event.target);
+            }
+        });
+        function setUnsaved(node) {
+            currentNode = node.parentElement;
+            while (!currentNode.classList.contains("savewrapper")) {
+                currentNode = currentNode.parentElement;
+            }
+            var star = currentNode.getElementsByClassName("star")[0];
+            var input = (currentNode.classList.contains("description")) ? currentNode.getElementsByTagName("textarea")[0] : currentNode.getElementsByTagName("input")[0];
+
+            if (star.classList.contains("hidden")) {
+                star.classList.remove("hidden");
+                if (!changelist.includes(input.name)) 
+                changelist.push(input.name);
+                document.getElementById("role_submit").disabled = false;
+                if (node.tagName == "SPAN") return;
+            }
+
+            if (node.tagName == "SPAN" || node.value == node.getAttribute("default")) {
+                star.classList.add("hidden");
+                changelist = changelist.splice(changelist.indexOf(input.name), changelist.indexOf(input.name));
+            } 
+            
+            if (changelist.length == 0) {
+                document.getElementById("role_submit").disabled = true;
+            }
+        }
+        function disableRow(node) {
+            children = node.parentElement.parentElement.parentElement.children;
+            for (const child of children) {
+                const inputField = child.getElementsByTagName("input")[0];
+                if (child.contains(node) || inputField.type != "checkbox") continue;
+                inputField.disabled = !node.parentNode.children[0].checked;
+            }
+        }
+
+        function setSubmitting(node) {
+            if (!node.disabled) {
+                submitting = true;
+            }
+        }
+
+        function setChanged() {
+            var changestr = changelist.toString();
+            document.getElementById("changed").value = changestr;
+        }
+
+        function deleteRole(node) {
+            var input = node.parentElement.getElementsByTagName("input")[0];
+            if (node.classList.contains("disabled") || !confirm("This will permanently delete Role: \"" + input.getAttribute("default") +"\".\nContinue?"))
+            return;
+            document.getElementById("delete").value = input.name;
+            input.form.submit();
+        }
+
+        function toggleDescription(node) {
+            description = node.parentElement;
+            if (!description.classList.contains("description"))
+                description = description.getElementsByClassName("description")[0];
+            
+            if (description.classList.contains("hidden")) {
+                description.classList.remove("hidden");
+                if (openDesc != null) toggleDescription(openDesc);
+                openDesc = node;
+            } else {
+                description.classList.add("hidden");
+                openDesc = null;
+            }
+        }
     </script>
 {% endblock %}

@@ -23,7 +23,7 @@ body {
 	border-radius: 7px;
 	border: var(--vdark-purple) 1px solid;
 	margin: auto;
-	margin-top: 10rem;
+	margin-top: 14rem;
 	background-color: var(--light-purple);
 	padding: 2rem;
 }
@@ -56,13 +56,41 @@ body {
 	width: 90%;
 }
 
-.display-box button:hover {
+.display-box button:hover:enabled {
 	background-color: var(--darker-purple);
 	color: var(--dark-green);
 }
 
+.display-box button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 .main-content {
 	margin-top: 5rem;
+}
+
+.role-icon {
+	color: var(--light-green);
+	border-radius: 50%;
+	background-color: var(--vdark-purple);
+	padding: 0.4rem;
+	line-height: normal !important;
+}
+
+.rolename {
+	display: inline-block;
+}
+
+.role-icon:hover:not(.disabled) {
+	color: var(--dark-green);
+	background-color: var(--darker-purple);
+}
+
+.role-icon.disabled {
+	background-color: var(--light-purple) !important;
+	color: slategray !important;
+	cursor: not-allowed;
 }
 
 table.main-content {
@@ -78,6 +106,7 @@ table.main-content, table.main-content td, th {
 
 table.main-content td, th {
 	padding: 0.5rem;
+	position: relative;
 }
 
 table.main-content thead {
@@ -90,8 +119,28 @@ table.hover tr:hover:not(thead tr) {
 
 table.main-content input[type=text] {
 	margin: 1rem;
-	width: 70%;
-	text-align: center;
+	width: 45%;
+	padding-top: 0.7rem;
+	padding-bottom: 0.5rem;
+	padding-left: 1rem;
+	background-color: var(--light-purple);
+	border-radius: 3px;
+}
+
+#addrole table {
+	margin-left: 1rem;
+	margin-top: 0;
+	margin-bottom: 1.5rem;
+	width: 20rem;
+	font-size: 1rem;
+}
+
+#addrole {
+	margin-top: 2rem;
+}
+
+#addrole button {
+	margin-top: 2rem;
 }
 
 .checkbox {
@@ -126,8 +175,12 @@ table.main-content input[type=text] {
 	background-color: var(--dark-purple);
 }
 
-.checkbox:hover input ~ .checkmark {
-	background-color: var(--darker-purple);
+.checkbox:hover input:enabled ~ .checkmark {
+	background-color: var(--darker-purple) !important;
+}
+
+.checkbox input:disabled ~ .checkmark {
+	opacity: 0.5;
 }
 
 .checkbox input:checked ~ .checkmark {
@@ -159,7 +212,7 @@ table.main-content input[type=text] {
 .memberlist {
 	width: 90rem;
 	padding: 0 !important;
-	margin-top: 4rem;
+	margin-top: 8rem;
 }
 
 .col-index td:first-child {
@@ -170,13 +223,23 @@ table.main-content input[type=text] {
 	background-color: var(--vdark-purple) !important;
 }
 
-.display-box input {
+.display-box input:not([type=checkbox]) {
 	width: 93%;
 	padding: 0.75rem;
 	margin-bottom: 2rem;
 	border-radius: 5px;
 	border: none;
 }
+
+.display-box textarea {
+	width: 93%;
+	padding: 0.75rem;
+	border-radius: 5px;
+	border: none;
+	min-height: 8rem;
+	resize: vertical;
+}
+
 .display-box select {
 	font-size: 1rem;
 	color: var(--darker-purple);
@@ -185,9 +248,89 @@ table.main-content input[type=text] {
 	border: var(--darker-purple) 1px solid;
 }
 
+#unsaved {
+	display: none;
+}
+
+#flashes {
+	top: 5rem;
+	left: 50%;
+	transform: translateX(-50%);
+	text-align: center;
+	position: absolute;
+}
+
+.star {
+	position: absolute;
+	top: 0.2rem;
+	right: 0.2rem;
+	width: min-content !important;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.min-icon {
+	color: slategray;
+	float: right;
+	font-size: 1.2rem;
+}
+
+.min-icon:hover {
+	color: var(--light-green);
+}
+
+.description {
+	position: absolute;
+	width: 20rem;
+	background-color: var(--light-purple);
+	padding: 0.5rem;
+	border-radius: 5px;
+	left: 16rem;
+	top: 30%;
+	z-index: 1;
+	border: var(--darker-purple) 1px solid;
+	white-space-collapse: collapse;
+}
+
+.description h3 {
+	text-align: left;
+	padding-left: 1rem;
+	margin: 0;
+	width: min-content;
+	display: inline-block;
+}
+
+.description textarea {
+	width: 80%;
+	min-height: 5rem;
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+
 .register {
 	width: 25rem;
-	margin-top: 6rem;
+	margin-top: 8rem;
+	margin-bottom: 4rem;
+}
+
+.top-control button {
+	width: max-content;
+	float: right;
+	margin-left: 3rem;
+	margin-right: 3rem;
+	margin-bottom: 1rem;
+}
+
+.top-control button:first-of-type {
+	float: left;
+}
+
+.topnav {
+	position: fixed;
+	width: 100%;
+	top: 0;
 }
 
 .topnav ul {

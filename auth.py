@@ -7,8 +7,8 @@ from werkzeug.security import check_password_hash
 from werkzeug.exceptions import abort
 
 from .db import (
-    check_state, get_role, new_user, get_user_by_email, 
-    update_activity, get_user_by_id, new_date
+    check_state, get_role, add_user, get_user_by_email, 
+    update_activity, get_user_by_id, new_date, get_db
 )
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -16,9 +16,24 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
     if request.method == 'POST':
-        error = new_user(request.form)
+        error = None
+
+        if not request.form["email"]:
+            error = "Email is required"
+        elif not request.form["password"]:
+            error = "Password is required"
+        elif not request.form["first_name"]:
+            error = "First name is required"
+        elif not request.form["last_name"]:
+            error = "Last name is required"
+
         if error is None:
-            return redirect(url_for("auth.login"))
+            try:
+                add_user(request.form["email"], request.form["password"], 2, request.form["first_name"], request.form["last_name"], new_date())
+            except get_db().IntegrityError:
+                error = f"User {request.form['email']} is already registered."
+            else:
+                return redirect(url_for("auth.login"))
             
         flash(error)
 
@@ -55,7 +70,7 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = get_user_by_id(user_id)
-        if g.user["role_id"] is not None:
+        if g.user is not None and g.user["role_id"] is not None:
             stateint = get_role(g.user["role_id"])["allowed_states"]
             #global variable is_manager can be used to check if user is a manager
             g.is_manager = check_state(stateint, 10) 
@@ -78,6 +93,7 @@ def logout():
     session.clear() #clear session to logout user
     for message in messages:
         flash(message) #reflash messages
+    flash("Successfully logged out.")
     return redirect(url_for('index')) #return to homepage
 
 def login_required(view): #decorator to require login to access page

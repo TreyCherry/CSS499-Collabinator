@@ -33,16 +33,30 @@
             <header>
                 {% block header %}{% endblock %}
             </header>
+            <div id="flashes">
             {% for message in get_flashed_messages() %}
                 <div class="flash">{{ message }}</div>
             {% endfor %}
+            </div>
             {% block content %}{% endblock %}
         </section>
 
         <script>
+            {% block scripts %}{% endblock %}
             {% if activeNav %}
                 document.getElementById("{{ activeNav }}").classList.add("active");
             {% endif %}
+            function toggleCheck(node, additionalScript=null) {
+                var checkbox = node.parentNode.children[0];
+                if (!checkbox.disabled) {
+                    checkbox.checked = !checkbox.checked;
+                    if (typeof(additionalScript) === "function") {
+                        additionalScript(node);
+                    }
+                }
+            }
         </script>
+
+        <script src="https://kit.fontawesome.com/ce931bd998.js" crossorigin="anonymous"></script>
     </body>
 </html>

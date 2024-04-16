@@ -23,7 +23,7 @@ CREATE TABLE Users (
     salt TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    date_registered INT NOT NULL,
+    date_registered INTEGER NOT NULL,
     last_active INTEGER,
     FOREIGN KEY (role_id) REFERENCES Roles(role_id)
 );
@@ -72,32 +72,8 @@ CREATE TABLE DocRoleStates (
 CREATE TABLE Alerts (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    type TEXT NOT NULL,
+    link TEXT NOT NULL,
     time INT NOT NULL,
     description TEXT,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
-);
-
-INSERT INTO Roles (
-    role_name,
-    allowed_states,
-    description,
-    role_type
-) VALUES (
-    'Admin', 
-    2047,
-    'Administrator',
-    0
-);
-
-INSERT INTO Roles (
-    role_name,
-    allowed_states,
-    description,
-    role_type
-) VALUES (
-    'None', 
-    0,
-    'No Role',
-    2
 );
