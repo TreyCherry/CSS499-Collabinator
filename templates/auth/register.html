@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% macro value(base, index) %}
+    {% if base and base[index] %}
+        value="{{base[index]}}"
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+    <div class="display-box register">
+        <h1>{% block title %}Register{% endblock %}</h1>
+        <h2>Set up your account</h2>
+        <form class="main-content" method="post">
+            <input {{value(member, "email")}} type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" {% block passwordinfo %}placeholder="Password" required {% endblock %}>
+            <input {{value(member, "first_name")}} name="first_name" placeholder="First Name" required>
+            <input {{value(member, "last_name")}} name="last_name" placeholder="Last Name" required>
+            {% block other %}
+            <span>* You will need to be approved by an administrator to complete registration</span>
+            {% endblock  %}
+            <button type="submit">{% block submit %}Register{% endblock %}</button>
+        </form>
+        {% block extrabutton %}{% endblock %}
+    </div>
+{% endblock %}

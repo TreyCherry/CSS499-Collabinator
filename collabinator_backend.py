@@ -1,6 +1,11 @@
-from flask import Blueprint, render_template
-from flask_login import login_required, current_user
-from . import db
+from flask import (
+    Blueprint, render_template, flash, g, redirect, request, url_for
+)
+from werkzeug.exceptions import abort
+from .auth import login_required
+from flaskr.db import get_db
+
+
 
 
 main = Blueprint('main', __name__)

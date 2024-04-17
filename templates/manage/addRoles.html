@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="display-box register">
+        <h1>{% block title %}Add Role{% endblock %}</h1>
+        <form id="addrole" class="main-content" method="post">
+            <input id="name" placeholder="Role Name" name="role_name" required>
+            <table class="main-content col-index">
+                {% for state in states %}
+                    <tr>
+                        <td>{{ state.name }}</td>
+                        <td>
+                            <div class="checkbox">
+                                <input
+                                name="{{ state.id }}" 
+                                type="checkbox"
+                                {% if state.id == 0 %}checked{% endif %}>
+                                <span class="checkmark" onclick="toggleCheck(this{% if state.id == 0 %}, disableRow{% endif %})"></span>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <textarea name="role_description" placeholder="Description (optional)"></textarea>
+            <button type="submit">Create Role</button>
+            <form method="post">
+                <input type="hidden" name="cancel">
+                <button onclick="cancelButton(this)" type="submit">Cancel</button>
+            </form>
+        </form>
+    </div>
+    <script>
+        function disableRow(node) {
+            children = node.parentElement.parentElement.parentElement.parentElement.children;
+            for (const child of children) {
+                const inputField = child.getElementsByTagName("input")[0];
+                if (child.contains(node)) continue;
+                inputField.disabled = !node.parentNode.children[0].checked;
+            }
+        }
+
+        function cancelButton(node) {
+            node.parentElement.getElementsByTagName("input")[0].value = "1";
+            document.getElementById("name").removeAttribute("required");
+        }
+    </script>
+{% endblock %}

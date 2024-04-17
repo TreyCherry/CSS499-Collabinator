@@ -1,0 +1,508 @@
+/* General Page Styles */
+:root {
+	--black: #000000;
+	--white: #FFFFFF;
+	--dark-purple: #8786B0;
+	--vdark-purple: #645f87;
+	--light-purple: #A7A4D3; 
+	--light-green: #A7EEB2;
+	--dark-green: #58C699;
+	--darker-purple: darkslateblue;
+}
+
+body {
+	font-family: Arial;
+	background-color: var(--dark-purple);
+	margin: 0;
+	padding: 0;
+}
+
+.display-box {
+	width: 20rem;
+	text-align: center;
+	border-radius: 7px;
+	border: var(--vdark-purple) 1px solid;
+	margin: auto;
+	margin-top: 14rem;
+	background-color: var(--light-purple);
+	padding: 2rem;
+}
+
+.display-box h1 {
+	font-size: 2.4rem;
+	margin-bottom: 1rem;
+}
+
+.display-box h2 {
+	font-size: 1.2rem;
+}
+
+.display-box button {
+	width: 100%;
+	padding: 0.75rem;
+	background-color: var(--vdark-purple);
+	color: var(--light-green);
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	margin-top: 0.8rem;
+	font-size: 1.2rem;
+}
+
+.display-box span {
+	font-size: 1rem;
+	display: inline-block;
+	color:  #14141f;
+	width: 90%;
+}
+
+.display-box button:hover:enabled {
+	background-color: var(--darker-purple);
+	color: var(--dark-green);
+}
+
+.display-box button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.main-content {
+	margin-top: 5rem;
+}
+
+.role-icon {
+	color: var(--light-green);
+	border-radius: 50%;
+	background-color: var(--vdark-purple);
+	padding: 0.4rem;
+	line-height: normal !important;
+}
+
+.rolename {
+	display: inline-block;
+}
+
+.role-icon:hover:not(.disabled) {
+	color: var(--dark-green);
+	background-color: var(--darker-purple);
+}
+
+.role-icon.disabled {
+	background-color: var(--light-purple) !important;
+	color: slategray !important;
+	cursor: not-allowed;
+}
+
+table.main-content {
+	width: 100%;
+	margin-top: 3rem;
+	font-size: 1.2rem;
+}
+
+table.main-content, table.main-content td, th {
+	border: var(--darker-purple) 1px solid;
+	border-collapse: collapse;
+}
+
+table.main-content td, th {
+	padding: 0.5rem;
+	position: relative;
+}
+
+table.main-content thead {
+	background-color: var(--dark-purple);
+}
+
+table.hover tr:hover:not(thead tr) {
+	background-color: var(--vdark-purple);
+}
+
+table.main-content input[type=text] {
+	margin: 1rem;
+	width: 45%;
+	padding-top: 0.7rem;
+	padding-bottom: 0.5rem;
+	padding-left: 1rem;
+	background-color: var(--light-purple);
+	border-radius: 3px;
+}
+
+#addrole table {
+	margin-left: 1rem;
+	margin-top: 0;
+	margin-bottom: 1.5rem;
+	width: 20rem;
+	font-size: 1rem;
+}
+
+#addrole {
+	margin-top: 2rem;
+}
+
+#addrole button {
+	margin-top: 2rem;
+}
+
+.checkbox {
+	display: block;
+	position: relative;
+	padding-left: 2.5rem;
+	margin-bottom: 1rem;
+	left: 50%;
+	transform: translateX(-12.5%);
+	cursor: pointer;
+	font-size: 1.2rem;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.checkbox input {
+	position: absolute;
+	opacity: 0;
+	cursor: pointer;
+	height: 0;
+	width: 0;
+}
+
+.checkmark {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 1.5rem;
+	width: 1.5rem !important;
+	background-color: var(--dark-purple);
+}
+
+.checkbox:hover input:enabled ~ .checkmark {
+	background-color: var(--darker-purple) !important;
+}
+
+.checkbox input:disabled ~ .checkmark {
+	opacity: 0.5;
+}
+
+.checkbox input:checked ~ .checkmark {
+	background-color: var(--vdark-purple);
+}
+
+.checkmark:after {
+	content: "";
+	position: absolute;
+	display: none;
+}
+
+.checkbox input:checked ~ .checkmark:after {
+	display: block;
+}
+
+.checkbox .checkmark:after {
+	left: 0.5rem;
+	top: 0.25rem;
+	width: 0.25rem;
+	height: 0.5rem;
+	border: solid var(--light-green);
+	border-width: 0 3px 3px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+
+.memberlist {
+	width: 90rem;
+	padding: 0 !important;
+	margin-top: 8rem;
+}
+
+.col-index td:first-child {
+	background-color: var(--dark-purple) !important;
+}
+
+.col-index th:first-child {
+	background-color: var(--vdark-purple) !important;
+}
+
+.display-box input:not([type=checkbox]) {
+	width: 93%;
+	padding: 0.75rem;
+	margin-bottom: 2rem;
+	border-radius: 5px;
+	border: none;
+}
+
+.display-box textarea {
+	width: 93%;
+	padding: 0.75rem;
+	border-radius: 5px;
+	border: none;
+	min-height: 8rem;
+	resize: vertical;
+}
+
+.display-box select {
+	font-size: 1rem;
+	color: var(--darker-purple);
+	padding: 0.75rem 1.2rem;
+	border-radius: 3px;
+	border: var(--darker-purple) 1px solid;
+}
+
+#unsaved {
+	display: none;
+}
+
+#flashes {
+	top: 5rem;
+	left: 50%;
+	transform: translateX(-50%);
+	text-align: center;
+	position: absolute;
+}
+
+.star {
+	position: absolute;
+	top: 0.2rem;
+	right: 0.2rem;
+	width: min-content !important;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.min-icon {
+	color: slategray;
+	float: right;
+	font-size: 1.2rem;
+}
+
+.min-icon:hover {
+	color: var(--light-green);
+}
+
+.description {
+	position: absolute;
+	width: 20rem;
+	background-color: var(--light-purple);
+	padding: 0.5rem;
+	border-radius: 5px;
+	left: 16rem;
+	top: 30%;
+	z-index: 1;
+	border: var(--darker-purple) 1px solid;
+	white-space-collapse: collapse;
+}
+
+.description h3 {
+	text-align: left;
+	padding-left: 1rem;
+	margin: 0;
+	width: min-content;
+	display: inline-block;
+}
+
+.description textarea {
+	width: 80%;
+	min-height: 5rem;
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+
+.register {
+	width: 25rem;
+	margin-top: 8rem;
+	margin-bottom: 4rem;
+}
+
+.top-control button {
+	width: max-content;
+	float: right;
+	margin-left: 3rem;
+	margin-right: 3rem;
+	margin-bottom: 1rem;
+}
+
+.top-control button:first-of-type {
+	float: left;
+}
+
+.topnav {
+	position: fixed;
+	width: 100%;
+	top: 0;
+}
+
+.topnav ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: var(--light-purple);
+	border-bottom: var(--darker-purple) 1px solid;
+}
+
+.topnav li {
+	float: left;
+}
+
+.leftnav {
+	float: left;
+}
+
+.rightnav {
+	float: right;
+}
+
+.topnav a {
+	display: block;
+	color: var(--light-green);
+	text-align: center;
+	padding: 1.5rem 2.8rem;
+	text-decoration: none;
+	font-size: 1.2rem;
+	background-color: var(--dark-purple);
+}
+
+.leftnav a {
+	border-right: var(--darker-purple) 1px solid;
+}
+
+.rightnav a {
+	border-left: var(--darker-purple) 1px solid;
+}
+
+.topnav a:hover {
+	background-color: var(--darker-purple) !important;
+	color: var(--dark-green);
+}
+
+.topnav a.active {
+	background-color: var(--vdark-purple);
+}
+
+.top-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 10%;
+	background-color: var(--dark-purple); 
+	padding: 0px;
+	color: white;
+	border: 2px solid black;
+}
+.home-button {
+	position:relative;
+	left: 0;
+	width: 20%;
+	height: 100%;
+	background-color: var(--vdark-purple);
+	color: #FFFFFF;
+	border: 2px solid black;
+	cursor: pointer;
+	font-weight: bold;
+}
+.company-button {
+	position:relative;
+	left: 41%;
+	width: 20%;
+	height: 100%;
+	background-color: var(--vdark-purple);
+	color: #FFFFFF;
+	border: 2px solid black;
+	cursor: pointer;
+	font-weight: bold;
+}
+.username-button {
+	position:relative;
+	left: 40%;
+	font-weight: bold;
+	width: 20%;
+	height: 100%;
+	background-color: var(--vdark-purple);
+	color: #FFFFFF;
+	border: 2px solid black;
+	cursor: pointer;
+}
+.side-bar {
+	position: fixed;
+	top: 12%;
+	left: 2%;
+	width: 18%;
+	height: 86%;
+	background-color: var(--dark-purple); 
+	border: 2px solid black;
+	padding: 0px;
+	color: white;
+}
+.nav-button {
+	font-weight: bold;
+	width: 100%;
+	height: 10%;
+	background-color: var(--dark-green);
+	color: var(--black);
+	border: 2px solid black;
+	cursor: pointer;
+}
+
+.display-port {
+	position: fixed;
+	top: 12%;
+	left: 22%;
+	width: 60%;
+	height: 86%;
+	background-color: var(--dark-purple); 
+	border: 2px solid black;
+}
+.tab-head {
+	position: relative;
+	top: -.25%;
+	left: 0%;
+	width: 98.5%;
+	height: 10%;
+	background-color: var(--vdark-purple); 
+	border: 2px solid black;
+	margin-top: 0;
+	padding-bottom: 1%;
+	padding-top: 1%;
+	padding-left: 1%;
+	color: var(--white);
+	text-align:center;
+}
+.doc-button {
+	position: relative;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 10%;
+	color: var(--black);
+}
+.doc-field {
+	position: relative;
+	top: 0%;
+	left: 0%;
+	width: 30%;
+	height: 100%;
+	color: var(--black);
+}
+
+.author-field {
+	position: relative;
+	top: 0%;
+	left: 30%;
+	width: 30%;
+	height: 100%;
+	color: var(--black);
+}
+
+.state-field {
+	position: relative;
+	top: 0%;
+	left: 60%;
+	width: 30%;
+	height: 100%;
+	color: var(--black);
+}
+
+

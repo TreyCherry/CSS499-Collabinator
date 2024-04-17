@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "collabinator"
+authors = [
+    {name = "Anthony Wittenborn"},
+    {name = "Michael Cooper"},
+    {name = "Adam Born"},
+    {name = "Joseph Cherry"}
+]
+version = "0.0.1"
+description = "Collabinator is a tool for collaboration on documents"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "flask",
+    "flask-login"
+]

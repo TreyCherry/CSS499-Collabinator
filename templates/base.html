@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}{% endblock %} - Collabinator</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <style>
+            {% block style %}{% endblock %}
+        </style>
+    </head>
+    <body>
+        <nav class="topnav">
+            <ul>
+                <div class="leftnav">
+                    <li><a id="index" href="{{ url_for('index') }}">Collabinator</a></li>
+                    {% if g.is_manager %}
+                        <li><a id="members" href="{{ url_for('members') }}">Members</a></li>
+                        <li><a id="roles" href="{{ url_for('roles') }}">Roles</a></li>
+                    {% endif %}
+                </div>
+                <div class="rightnav">
+                    {% if g.user %}
+                        <li><a id="settings" href="{/{ url_for('settings') }}">{{ g.user["first_name"] }}</a></li>
+                        <li><a id="logout" href="{{ url_for('auth.logout') }}">Log Out</a></li>
+                    {% else %}
+                        <li><a id="register" href="{{ url_for('auth.register') }}">Register</a></li>
+                        <li><a id="login" href="{{ url_for('auth.login') }}">Log In</a></li>
+                    {% endif %}
+                </div>
+            </ul>
+        </nav>
+        <section class="content">
+            <header>
+                {% block header %}{% endblock %}
+            </header>
+            <div id="flashes">
+            {% for message in get_flashed_messages() %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+            </div>
+            {% block content %}{% endblock %}
+        </section>
+
+        <script>
+            {% block scripts %}{% endblock %}
+            {% if activeNav %}
+                document.getElementById("{{ activeNav }}").classList.add("active");
+            {% endif %}
+            function toggleCheck(node, additionalScript=null) {
+                var checkbox = node.parentNode.children[0];
+                if (!checkbox.disabled) {
+                    checkbox.checked = !checkbox.checked;
+                    if (typeof(additionalScript) === "function") {
+                        additionalScript(node);
+                    }
+                }
+            }
+        </script>
+
+        <script src="https://kit.fontawesome.com/ce931bd998.js" crossorigin="anonymous"></script>
+    </body>
+</html>
