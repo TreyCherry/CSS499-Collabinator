@@ -26,6 +26,7 @@ body {
 	margin-top: 14rem;
 	background-color: var(--light-purple);
 	padding: 2rem;
+	margin-bottom: 3rem;
 }
 
 .display-box h1 {
@@ -119,7 +120,7 @@ table.hover tr:hover:not(thead tr) {
 
 table.main-content input[type=text] {
 	margin: 1rem;
-	width: 45%;
+	width: 4rem;
 	padding-top: 0.7rem;
 	padding-bottom: 0.5rem;
 	padding-left: 1rem;
@@ -144,7 +145,7 @@ table.main-content input[type=text] {
 }
 
 .checkbox {
-	display: block;
+	display: flex;
 	position: relative;
 	padding-left: 2.5rem;
 	margin-bottom: 1rem;
@@ -240,12 +241,37 @@ table.main-content input[type=text] {
 	resize: vertical;
 }
 
+.display-box label {
+	font-size: 1.2rem;
+	padding-left: 1rem;
+	float: left;
+	transform: translateY(40%);
+}
+
 .display-box select {
 	font-size: 1rem;
 	color: var(--darker-purple);
 	padding: 0.75rem 1.2rem;
 	border-radius: 3px;
 	border: var(--darker-purple) 1px solid;
+	min-width: 12rem;
+	text-align: center;
+}
+
+.savewrapper {
+	position: relative;
+}
+
+div.savewrapper {
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+	width: min-content;
+}
+
+.iconstar .star {
+	right: -0.4rem;
+	top: -0.8rem;
 }
 
 #unsaved {
@@ -287,7 +313,7 @@ table.main-content input[type=text] {
 	background-color: var(--light-purple);
 	padding: 0.5rem;
 	border-radius: 5px;
-	left: 16rem;
+	left: 2.55rem;
 	top: 30%;
 	z-index: 1;
 	border: var(--darker-purple) 1px solid;
