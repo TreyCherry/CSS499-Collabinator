@@ -13,6 +13,9 @@
             <ul>
                 <div class="leftnav">
                     <li><a id="index" href="{{ url_for('index') }}">Collabinator</a></li>
+                    {% if activeNav == "docs"%}
+                        <li><a id="docs" href="{{ url_for(request.endpoint) }}">Docs</a></li>
+                    {% endif %}
                     {% if g.is_manager %}
                         <li><a id="members" href="{{ url_for('members') }}">Members</a></li>
                         <li><a id="roles" href="{{ url_for('roles') }}">Roles</a></li>

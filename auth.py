@@ -71,9 +71,9 @@ def load_logged_in_user():
     else:
         g.user = get_user_by_id(user_id)
         if g.user is not None and g.user["role_id"] is not None:
-            stateint = get_role(g.user["role_id"])["allowed_states"]
+            g.stateint = get_role(g.user["role_id"])["allowed_states"]
             #global variable is_manager can be used to check if user is a manager
-            g.is_manager = check_state(stateint, 10) 
+            g.is_manager = check_state(g.stateint, 10) 
 
 @bp.before_app_request
 def check_activity():
