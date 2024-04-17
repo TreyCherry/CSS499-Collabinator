@@ -31,21 +31,25 @@ def roles():
             return redirect(url_for('roles'))
         
         for change in changelist.split(","):
-            rowIndex = change[0]
+            if "-" in change:
+                split = change.index('-')
+                rowIndex = change[0:split]
+            else:
+                rowIndex = change
             if (rowIndex == "1" and (len(change) != 1 and change[2] != 'd')) or rowIndex == "2":
                 flash("Cannot edit root role.")
                 continue
             if rowIndex not in changerows:
                 changerows[rowIndex] = {}
-            if len(change) == 1:
+            if len(change) == len(rowIndex):
                 changerows[rowIndex]["name"] = request.form.get(rowIndex)
                 continue
-            if change[2] == 'd':
+            if change[split+1] == 'd':
                 changerows[rowIndex]["description"] = request.form.get(change)
                 continue
             if "states" not in changerows[rowIndex]:
                 changerows[rowIndex]["states"] = []
-            changerows[rowIndex]["states"].append(int(change[2:]))
+            changerows[rowIndex]["states"].append(int(change[split+1:]))
         
         for index, changerow in changerows.items():
             try:
