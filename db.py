@@ -135,20 +135,20 @@ def add_user(email: str, password, role_id, first_name: str, last_name: str, dat
     db.commit()
 
 def update_user(user_id, new_details):
-    collumns = "email = ?, first_name = ?, last_name = ?, role_id = ?"
+    columns = "email = ?, first_name = ?, last_name = ?, role_id = ?"
     role = int(new_details["role_id"])
     if int(user_id) == 1 and role != 1:
         role = 1
         flash("Default admin account role cannot be changed")
     values = [new_details["email"].lower(), new_details["first_name"].title(), new_details["last_name"].title(), role]
     if new_details["password"] != "":
-        collumns += ", password = ?, salt = ?"
+        columns += ", password = ?, salt = ?"
         salt = gen_salt(16)
         values.append(generate_password_hash(new_details["password"]+salt))
         values.append(salt)
     values.append(user_id)
     db = get_db()
-    query = "UPDATE Users SET " + collumns + " WHERE user_id = ?"
+    query = "UPDATE Users SET " + columns + " WHERE user_id = ?"
     db.execute(query, tuple(values))
     db.commit()
 
