@@ -110,6 +110,7 @@
                 if (!changelist.includes(input.name)) 
                 changelist.push(input.name);
                 document.getElementById("role_submit").disabled = false;
+                document.getElementById("unsaved").style.display = "block";
                 if (node.tagName == "SPAN") return;
             }
 
@@ -120,6 +121,7 @@
             
             if (changelist.length == 0) {
                 document.getElementById("role_submit").disabled = true;
+                document.getElementById("unsaved").style.display = "none";
             }
         }
         function disableRow(node) {

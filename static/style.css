@@ -275,6 +275,7 @@ div.savewrapper {
 }
 
 #unsaved {
+	width: 100%;
 	display: none;
 }
 
