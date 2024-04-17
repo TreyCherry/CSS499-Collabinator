@@ -65,7 +65,7 @@ def roles():
 @manager_login_required
 def addRole():
     if request.method == 'POST':
-        if request.form.get("cancel", None) is not None:
+        if request.form.get("cancel", None) is not None and request.form["cancel"] == "1":
             return redirect(url_for('roles'))
 
         if request.form.get("role_name", None) is None or request.form["role_name"] == "":

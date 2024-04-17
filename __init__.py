@@ -37,8 +37,8 @@ def create_app(test_config=None):
     from . import auth
     app.register_blueprint(auth.bp)
 
-    from . import workflow
-    app.register_blueprint(workflow.bp)
+    from . import document
+    app.register_blueprint(document.bp)
     app.add_url_rule('/', endpoint='index')
 
     from . import members
