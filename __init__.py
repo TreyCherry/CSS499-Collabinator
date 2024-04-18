@@ -18,64 +18,45 @@ def create_app(test_config=None):
 
     else:
         app.config.from_mapping(test_config)
-    
+
+    #make sure the instance folder exists
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
 
+    #make sure the file upload folder exists
     try:
         os.makedirs(app.config['UPLOAD_FOLDER'])
     except OSError:
         pass
 
     from . import db
-    db.init_app(app)
+    db.init_app(app) #run initial database commands
+    #set some global env functions to use in jinja templates
     app.jinja_env.globals.update(get_role=db.get_role)
     app.jinja_env.globals.update(check_state=db.check_state)
     app.jinja_env.globals.update(date_format=db.date_format)
-    app.jinja_env.globals.update(date_concise=db.date_concise)
+    #app.jinja_env.globals.update(date_concise=db.date_concise)
 
     from . import auth
-    app.register_blueprint(auth.bp)
+    app.register_blueprint(auth.bp) #register auth blueprint
 
     from . import documents
-    app.register_blueprint(documents.bp)
-    app.add_url_rule('/', endpoint='index')
+    app.register_blueprint(documents.bp) #register documents blueprint containing index
+    app.add_url_rule('/', endpoint='index') #set default route to index
+    app.register_blueprint(documents.bp2) #register remaining documents blueprint
 
     from . import members
-    app.register_blueprint(members.bp, url_prefix=None)
-    app.add_url_rule('/members', endpoint='members')
+    app.register_blueprint(members.bp, url_prefix=None) #register members blueprint
+    app.add_url_rule('/members', endpoint='members') #ensure members routes correctly
 
     from . import roles
-    app.register_blueprint(roles.bp, url_prefix=None)
-    app.add_url_rule('/roles', endpoint='roles')
+    app.register_blueprint(roles.bp, url_prefix=None) #register roles blueprint
+    app.add_url_rule('/roles', endpoint='roles') #ensure roles routes correctly
 
-    @app.route('/favicon.ico')
+    @app.route('/favicon.ico') #set the icon to be used in the browser
     def favicon():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
     return app
-
-    '''
-    login_manager = LoginManager()
-    login_manager.login_view = 'auth.login'
-    login_manager.init_app(app)
-
-    from .models import User
-
-    @login_manager.user_loader
-    def load_user(user_id):
-        #since uid is primary key of table, use it in query for the user
-        return User.query.get(int(user_id))
-
-    #blueprint for auth routes in our app
-    from .auth import auth as auth_blueprint #importing from auth.py
-    app.register_blueprint(auth_blueprint)
-
-    #blueprint for non-auth parts of app
-    from .collabinator_backend import main as main_blueprint
-    app.register_blueprint(main_blueprint)
-
-    return app
-    '''

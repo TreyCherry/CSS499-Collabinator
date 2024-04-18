@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}View Document{% endblock %}
+
 {% block content %}
-    <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe>
+    <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
 {% endblock %}
