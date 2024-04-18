@@ -4,8 +4,11 @@ DROP TABLE IF EXISTS Documents;
 DROP TABLE IF EXISTS Comments;
 DROP TABLE IF EXISTS Responses;
 DROP TABLE IF EXISTS DocRoleStates;
+DROP TABLE IF EXISTS DocReviewers;
 DROP TABLE IF EXISTS Alerts;
-DROP TABLE IF EXISTS ResetTokens;
+
+VACUUM;
+PRAGMA INTEGRITY_CHECK;
 
 CREATE TABLE Roles (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +36,7 @@ CREATE TABLE Documents (
     state_id INTEGER NOT NULL,
     author_id INTEGER NOT NULL,
     document_name TEXT UNIQUE NOT NULL,
-    document_filename TEXT UNIQUE NOT NULL,
+    document_type INTEGER NOT NULL,
     date_created INT NOT NULL,
     last_updated INT NOT NULL,
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
@@ -60,13 +63,12 @@ CREATE TABLE Responses (
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
 );
 
-CREATE TABLE DocRoleStates (
-    main_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_id INTEGER NOT NULL,
+CREATE TABLE DocReviewers (
+    combo_id INTEGER PRIMARY KEY AUTOINCREMENT,
     document_id INTEGER NOT NULL,
-    allowed_states INTEGER NOT NULL,
-    FOREIGN KEY (role_id) REFERENCES Roles(role_id),
-    FOREIGN KEY (document_id) REFERENCES Documents(document_id)
+    reviewer_id INTEGER NOT NULL,
+    FOREIGN KEY (document_id) REFERENCES Documents(document_id),
+    FOREIGN KEY (reviewer_id) REFERENCES Users(user_id)
 );
 
 CREATE TABLE Alerts (

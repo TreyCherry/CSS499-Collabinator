@@ -3,6 +3,9 @@ import sqlite3
 import click
 from flask import current_app, g, flash
 from werkzeug.security import generate_password_hash, gen_salt
+from werkzeug.utils import secure_filename
+
+import os
 
 from dataclasses import dataclass
 import datetime
@@ -11,23 +14,95 @@ import datetime
 class State:
     id: int
     name: str
+    docStage: str
     description: str
 
     
 # list of states for documents
 STATES = [
-    State(0, "Read", "read document"),
-    State(1, "Upload", "upload documents"),
-    State(2, "Approve", "approve documents for review"),
-    State(3, "Select", "select reviewers"),
-    State(4, "Comment", "comment on documents"),
-    State(5, "Respond", "respond to comments"),
-    State(6, "Resolve", "resolve comments"),
-    State(7, "Upload Update", "upload updates to documents"),
-    State(8, "Close Comments", "close comments"),
-    State(9, "Close Review", "close document review"),
-    State(10, "Manage Users", "approve new member requests")
+    State(0, "Read", "Read Only", "Read Documents"),
+    State(1, "Upload", "Updated", "Upload Documents"),
+    State(2, "Approve", "Awaiting Approval", "Approve Documents For Review"),
+    State(3, "Select", "Select Reviewers", "Select Reviewers"),
+    State(4, "Comment", "Ready for Review", "Comment on Documents"),
+    State(5, "Respond", "Comments to View", "Respond to Comments"),
+    State(6, "Resolve", "Responded", "Resolve Comments"),
+    State(7, "Upload Update", "Resolved", "Upload Updates to Documents"),
+    State(8, "Close Comments", "Comments Closed", "Close Comments"),
+    State(9, "Close Review", "Review Closed", "Close Document Review"),
+    State(10, "Manage Users", "none", "Manage Users")
 ]
+
+ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_file(file, author_id):
+    if file.filename == '':
+        flash('No selected file')
+        return False
+    if allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+
+        name, type = get_name_type(filename)
+        if (get_doc_by_name(name) is not None):
+            flash('Document already exists')
+            return False
+        
+        update_document(name, type, author_id)
+        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+        
+    return True
+
+def get_name_type(filename):
+    name, ext = filename.rsplit('.', 1)
+    if ext == 'txt':
+        type = 0
+    else:
+        type = 1 
+    return name, type
+
+def get_filename(doc):
+    name = doc['document_name']
+    type = (doc['document_type'] == 0 and 'txt') or 'pdf'
+
+    return name + '.' + type
+
+def get_doc_by_name(name):
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Documents WHERE document_name = ?', (name,)
+    ).fetchone()
+
+def get_doc_by_id(id):
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Documents WHERE document_id = ?', (id,)
+    ).fetchone()
+
+def get_documents():
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Documents ORDER BY document_name'
+    ).fetchall()
+
+def update_document(name, type, author_id):
+    db = get_db()
+
+    existing = get_doc_by_name(name)
+
+
+    if existing is None:
+        query = 'INSERT INTO Documents (document_name, document_type, state_id, author_id, date_created, last_updated) VALUES (?, ?, ?, ?, ?, ?)'
+        values = (name, type, 2, author_id, new_date(), new_date())
+    else:
+        query = 'UPDATE Documents SET document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_name = ?'
+        values = (type, 7, author_id, new_date(), name)
+
+    db.execute(query, values)
+    db.commit()
 
 def get_states(stateint):
     states = []
@@ -64,6 +139,14 @@ def date_format(date):
     components.reverse()
     return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components)
 
+def date_concise(date):
+    newdate = date//100*100
+    datestring = date_format(date)
+    while newdate > 0 and newdate != date:
+        newdate=newdate//100
+        datestring = datestring[:-3]
+    return datestring
+
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(
@@ -85,6 +168,10 @@ def init_db():
 
     with current_app.open_resource('schema.sql') as f:
         db.executescript(f.read().decode('utf8'))
+
+    if os.path.exists(current_app.config['UPLOAD_FOLDER']):
+        for file in os.listdir(current_app.config['UPLOAD_FOLDER']):
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], file))
 
     add_role("Admin", [i for i in range(11)], "Administrator", 0)
     add_role("None", [], "No Role", 2)
@@ -135,20 +222,20 @@ def add_user(email: str, password, role_id, first_name: str, last_name: str, dat
     db.commit()
 
 def update_user(user_id, new_details):
-    collumns = "email = ?, first_name = ?, last_name = ?, role_id = ?"
+    columns = "email = ?, first_name = ?, last_name = ?, role_id = ?"
     role = int(new_details["role_id"])
     if int(user_id) == 1 and role != 1:
         role = 1
         flash("Default admin account role cannot be changed")
     values = [new_details["email"].lower(), new_details["first_name"].title(), new_details["last_name"].title(), role]
     if new_details["password"] != "":
-        collumns += ", password = ?, salt = ?"
+        columns += ", password = ?, salt = ?"
         salt = gen_salt(16)
         values.append(generate_password_hash(new_details["password"]+salt))
         values.append(salt)
     values.append(user_id)
     db = get_db()
-    query = "UPDATE Users SET " + collumns + " WHERE user_id = ?"
+    query = "UPDATE Users SET " + columns + " WHERE user_id = ?"
     db.execute(query, tuple(values))
     db.commit()
 

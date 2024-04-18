@@ -23,16 +23,20 @@
                 <tbody>
                     {% for role in roles %}
                         <tr>
-                            <td class="savewrapper">
-                                <span class="star hidden">*</span>
+                            <td>
                                 <i class="role-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i>
-                                <input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" default="{{ role['role_name'] }}" required>
-                                <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i>
-                                <div class="description savewrapper hidden">
+                                <div class="savewrapper">
+                                    <input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" default="{{ role['role_name'] }}" required>
                                     <span class="star hidden">*</span>
-                                    <h3>Description</h3>
-                                    <i class="fa-solid fa-xmark min-icon" onclick="toggleDescription(this)"></i>
-                                    <textarea placeholder="Enter a description (optional)" name="{{ role['role_id'] }}-d" default="{% if role['description'] %}{{ role['description'] }}{% endif %}">{% if role['description'] %}{{ role['description'] }}{% endif %}</textarea>
+                                </div>
+                                <div class="savewrapper iconstar">
+                                    <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i>
+                                    <span class="star hidden">*</span>
+                                    <div class="description hidden">
+                                        <h3>Description</h3>
+                                        <i class="fa-solid fa-xmark min-icon" onclick="toggleDescription(this)"></i>
+                                        <textarea placeholder="Enter a description (optional)" name="{{ role['role_id'] }}-d" default="{% if role['description'] %}{{ role['description'] }}{% endif %}">{% if role['description'] %}{{ role['description'] }}{% endif %}</textarea>
+                                    </div>
                                 </div>
                             </td>
                             {% for state in states %}
@@ -99,13 +103,14 @@
                 currentNode = currentNode.parentElement;
             }
             var star = currentNode.getElementsByClassName("star")[0];
-            var input = (currentNode.classList.contains("description")) ? currentNode.getElementsByTagName("textarea")[0] : currentNode.getElementsByTagName("input")[0];
+            var input = (node.parentElement.classList.contains("description")) ? currentNode.getElementsByTagName("textarea")[0] : currentNode.getElementsByTagName("input")[0];
 
             if (star.classList.contains("hidden")) {
                 star.classList.remove("hidden");
                 if (!changelist.includes(input.name)) 
                 changelist.push(input.name);
                 document.getElementById("role_submit").disabled = false;
+                document.getElementById("unsaved").style.display = "block";
                 if (node.tagName == "SPAN") return;
             }
 
@@ -116,6 +121,7 @@
             
             if (changelist.length == 0) {
                 document.getElementById("role_submit").disabled = true;
+                document.getElementById("unsaved").style.display = "none";
             }
         }
         function disableRow(node) {

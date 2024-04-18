@@ -26,6 +26,7 @@ body {
 	margin-top: 14rem;
 	background-color: var(--light-purple);
 	padding: 2rem;
+	margin-bottom: 3rem;
 }
 
 .display-box h1 {
@@ -119,7 +120,7 @@ table.hover tr:hover:not(thead tr) {
 
 table.main-content input[type=text] {
 	margin: 1rem;
-	width: 45%;
+	width: 4rem;
 	padding-top: 0.7rem;
 	padding-bottom: 0.5rem;
 	padding-left: 1rem;
@@ -144,7 +145,7 @@ table.main-content input[type=text] {
 }
 
 .checkbox {
-	display: block;
+	display: flex;
 	position: relative;
 	padding-left: 2.5rem;
 	margin-bottom: 1rem;
@@ -240,15 +241,41 @@ table.main-content input[type=text] {
 	resize: vertical;
 }
 
+.display-box label {
+	font-size: 1.2rem;
+	padding-left: 1rem;
+	float: left;
+	transform: translateY(40%);
+}
+
 .display-box select {
 	font-size: 1rem;
 	color: var(--darker-purple);
 	padding: 0.75rem 1.2rem;
 	border-radius: 3px;
 	border: var(--darker-purple) 1px solid;
+	min-width: 12rem;
+	text-align: center;
+}
+
+.savewrapper {
+	position: relative;
+}
+
+div.savewrapper {
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+	width: min-content;
+}
+
+.iconstar .star {
+	right: -0.4rem;
+	top: -0.8rem;
 }
 
 #unsaved {
+	width: 100%;
 	display: none;
 }
 
@@ -287,7 +314,7 @@ table.main-content input[type=text] {
 	background-color: var(--light-purple);
 	padding: 0.5rem;
 	border-radius: 5px;
-	left: 16rem;
+	left: 2.55rem;
 	top: 30%;
 	z-index: 1;
 	border: var(--darker-purple) 1px solid;
@@ -331,6 +358,7 @@ table.main-content input[type=text] {
 	position: fixed;
 	width: 100%;
 	top: 0;
+	z-index: 1;
 }
 
 .topnav ul {
@@ -381,128 +409,12 @@ table.main-content input[type=text] {
 	background-color: var(--vdark-purple);
 }
 
-.top-bar {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 10%;
-	background-color: var(--dark-purple); 
-	padding: 0px;
-	color: white;
-	border: 2px solid black;
-}
-.home-button {
-	position:relative;
-	left: 0;
-	width: 20%;
-	height: 100%;
-	background-color: var(--vdark-purple);
-	color: #FFFFFF;
-	border: 2px solid black;
-	cursor: pointer;
-	font-weight: bold;
-}
-.company-button {
-	position:relative;
-	left: 41%;
-	width: 20%;
-	height: 100%;
-	background-color: var(--vdark-purple);
-	color: #FFFFFF;
-	border: 2px solid black;
-	cursor: pointer;
-	font-weight: bold;
-}
-.username-button {
-	position:relative;
-	left: 40%;
-	font-weight: bold;
-	width: 20%;
-	height: 100%;
-	background-color: var(--vdark-purple);
-	color: #FFFFFF;
-	border: 2px solid black;
-	cursor: pointer;
-}
-.side-bar {
-	position: fixed;
-	top: 12%;
-	left: 2%;
-	width: 18%;
-	height: 86%;
-	background-color: var(--dark-purple); 
-	border: 2px solid black;
-	padding: 0px;
-	color: white;
-}
-.nav-button {
-	font-weight: bold;
-	width: 100%;
-	height: 10%;
-	background-color: var(--dark-green);
-	color: var(--black);
-	border: 2px solid black;
-	cursor: pointer;
-}
-
-.display-port {
-	position: fixed;
-	top: 12%;
-	left: 22%;
+.docview {
+	margin: auto;
+	margin-top: 8rem;
+	display: block;
 	width: 60%;
-	height: 86%;
-	background-color: var(--dark-purple); 
-	border: 2px solid black;
+	height: 90vh;
+	border: none;
+	margin-bottom: 5rem;
 }
-.tab-head {
-	position: relative;
-	top: -.25%;
-	left: 0%;
-	width: 98.5%;
-	height: 10%;
-	background-color: var(--vdark-purple); 
-	border: 2px solid black;
-	margin-top: 0;
-	padding-bottom: 1%;
-	padding-top: 1%;
-	padding-left: 1%;
-	color: var(--white);
-	text-align:center;
-}
-.doc-button {
-	position: relative;
-	top: 0%;
-	left: 0%;
-	width: 100%;
-	height: 10%;
-	color: var(--black);
-}
-.doc-field {
-	position: relative;
-	top: 0%;
-	left: 0%;
-	width: 30%;
-	height: 100%;
-	color: var(--black);
-}
-
-.author-field {
-	position: relative;
-	top: 0%;
-	left: 30%;
-	width: 30%;
-	height: 100%;
-	color: var(--black);
-}
-
-.state-field {
-	position: relative;
-	top: 0%;
-	left: 60%;
-	width: 30%;
-	height: 100%;
-	color: var(--black);
-}
-
-
