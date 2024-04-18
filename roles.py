@@ -7,9 +7,9 @@ from .db import (
     get_roles, STATES, add_role, get_db, update_role, remove_role
 )
 
-bp = Blueprint('roles', __name__)
+bp = Blueprint('roles', __name__, url_prefix='/roles')
 
-@bp.route('/roles', methods=('GET', 'POST'))
+@bp.route('', methods=('GET', 'POST'))
 @login_required
 @manager_login_required
 def roles():
@@ -64,7 +64,7 @@ def roles():
 
     return render_template('manage/roles.html', roles=roles, activeNav="roles", states=STATES)
 
-@bp.route('/roles/add', methods=('GET', 'POST'))
+@bp.route('/add', methods=('GET', 'POST'))
 @login_required
 @manager_login_required
 def addRole():

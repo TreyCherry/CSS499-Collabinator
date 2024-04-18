@@ -1,8 +1,10 @@
+{# base template for all pages, not to be accessed on its own #}
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}{% endblock %} - Collabinator</title>
+        <title>{% block fulltitle %}{% block title %}{% endblock %} - Collabinator{% endblock %}</title> {# title should be set on each page that extends this #}
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <style>
             {% block style %}{% endblock %}
@@ -13,21 +15,21 @@
             <ul>
                 <div class="leftnav">
                     <li><a id="index" href="{{ url_for('index') }}">Collabinator</a></li>
-                    {% if activeNav == "docs"%}
+                    {% if activeNav == "docs"%} {# keep this hidden until we are already here #}
                         <li><a id="docs" href="{{ url_for(request.endpoint) }}">Docs</a></li>
                     {% endif %}
-                    {% if g.is_manager %}
+                    {% if check_state(g.stateint, 10) %} {# only roles with manage users can view these pages #}
                         <li><a id="members" href="{{ url_for('members') }}">Members</a></li>
                         <li><a id="roles" href="{{ url_for('roles') }}">Roles</a></li>
                     {% endif %}
                 </div>
                 <div class="rightnav">
-                    {% if g.user %}
-                        <li><a id="settings" href="{/{ url_for('settings') }}">{{ g.user["first_name"] }}</a></li>
-                        <li><a id="logout" href="{{ url_for('auth.logout') }}">Log Out</a></li>
-                    {% else %}
-                        <li><a id="register" href="{{ url_for('auth.register') }}">Register</a></li>
-                        <li><a id="login" href="{{ url_for('auth.login') }}">Log In</a></li>
+                    {% if g.user %} {# only show this if user is logged in #}
+                        <li><a id="settings" href="{/{ url_for('alerts') }}">{{ g.user["first_name"] }}</a></li> {# meant to go to alerts, intentionally broken url for now #}
+                        <li><a id="logout" href="{{ url_for('auth.logout') }}">Log Out</a></li> {# logout #}
+                    {% else %} {# show these if not logged in #}
+                        <li><a id="register" href="{{ url_for('auth.register') }}">Register</a></li> {# register #}
+                        <li><a id="login" href="{{ url_for('auth.login') }}">Log In</a></li> {# login #}
                     {% endif %}
                 </div>
             </ul>
@@ -37,29 +39,29 @@
                 {% block header %}{% endblock %}
             </header>
             <div id="flashes">
-            {% for message in get_flashed_messages() %}
+            {% for message in get_flashed_messages() %} {# flash messages #}
                 <div class="flash">{{ message }}</div>
             {% endfor %}
             </div>
-            {% block content %}{% endblock %}
+            {% block content %}{% endblock %} {# this is where the main content of an extended page goes #}
         </section>
 
         <script>
-            {% block scripts %}{% endblock %}
+            {% block scripts %}{% endblock %} // extra scripts can go here
             {% if activeNav %}
-                document.getElementById("{{ activeNav }}").classList.add("active");
+                document.getElementById("{{ activeNav }}").classList.add("active"); //set the active navbar item
             {% endif %}
-            function toggleCheck(node, additionalScript=null) {
+            function toggleCheck(node, additionalScript=null) { {# used for toggling checkboxes mostly in the roles section #}
                 var checkbox = node.parentNode.children[0];
                 if (!checkbox.disabled) {
                     checkbox.checked = !checkbox.checked;
-                    if (typeof(additionalScript) === "function") {
+                    if (typeof(additionalScript) === "function") { //if an additional function to run was passed then run it
                         additionalScript(node);
                     }
                 }
             }
         </script>
 
-        <script src="https://kit.fontawesome.com/ce931bd998.js" crossorigin="anonymous"></script>
+        <script src="https://kit.fontawesome.com/ce931bd998.js" crossorigin="anonymous"></script> {# font awesome icons #}
     </body>
 </html>

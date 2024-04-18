@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% macro value(base, index) %}
-    {% if base and base[index] %}
-        value="{{base[index]}}"
+{% macro value(base, index) %} {# this is not used here but instead is used in editMember.html which extends this template #}
+    {% if base and base[index] %} {# check that both base and base[index] are defined #}
+        value="{{base[index]}}" {# set value of input to base[index] #}
     {% endif %}
 {% endmacro %}
 
@@ -11,15 +11,15 @@
         <h1>{% block title %}Register{% endblock %}</h1>
         <h2>Set up your account</h2>
         <form class="main-content" method="post">
-            <input {{value(member, "email")}} type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" {% block passwordinfo %}placeholder="Password" required {% endblock %}>
+            <input {{value(member, "email")}} type="email" name="email" placeholder="Email" required> {# each element can have its value set in the macro #}
+            <input type="password" name="password" {% block passwordinfo %}placeholder="Password" required {% endblock %}> {# password has specific data to be overridden in editMember.html #}
             <input {{value(member, "first_name")}} name="first_name" placeholder="First Name" required>
             <input {{value(member, "last_name")}} name="last_name" placeholder="Last Name" required>
-            {% block other %}
-            <span>* You will need to be approved by an administrator to complete registration</span>
+            {% block other %} {# other additional information to have in form #}
+            <span>* You will need to be approved by an administrator to complete registration</span> {# we do not want this in editMember.html so we replace it with something else later #}
             {% endblock  %}
-            <button type="submit">{% block submit %}Register{% endblock %}</button>
+            <button type="submit">{% block submit %}Register{% endblock %}</button> {# submit button text is also changed in editMember.html #}
         </form>
-        {% block extrabutton %}{% endblock %}
+        {% block extrabutton %}{% endblock %} {# a block for putting extra buttons outside of the main form #}
     </div>
 {% endblock %}

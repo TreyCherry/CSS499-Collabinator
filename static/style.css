@@ -418,3 +418,11 @@ div.savewrapper {
 	border: none;
 	margin-bottom: 5rem;
 }
+
+.empty {
+	height: 40vh;
+}
+
+.empty h2 {
+	margin-top: 30vh;
+}

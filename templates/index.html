@@ -2,42 +2,54 @@
 
 {% block content %}
     <div class="display-box memberlist">
-        <h1>{% block title %}Documents{% endblock %}</h1>
+        {% if g.user is not none%}
+        <h1>Documents</h1>
         <div class="top-control">
-            {% if g.stateint and check_state(g.stateint, 1) %}
+            {% if check_state(g.stateint, 1) %} {# if user has upload permissions show add new button #}
                 <a href="{{ url_for('docs.addDocument') }}"><button>Add New</button></a>
             {% endif %}
         </div>
-        <table class="main-content hover">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Stage</th>
-                <th>Author</th>
-                <th>Created</th>
-                <th>Last Updated</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for doc in docs %}
-                <tr id="{{ doc['document_id'] }}" onclick="editDocument(this)">
-                    <td>{{ doc["document_name"] }}</td>
-                    <td>{% if doc["document_type"] == 0 %}txt{% else %}doc{% endif %}</td>
-                    <td>{{ states[doc["state_id"]].docStage }}</td>
-                    <td>{{ authors[doc["author_id"] | string] }}</td>
-                    <td>{{ date_format(doc["date_created"]) }}</td>
-                    <td>{{ date_format(doc["last_updated"]) }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-        </table>
+            {% if docs is not none %} {# if there are docs show them #}
+                <table class="main-content hover">
+                <thead>
+                    <tr> {# table header #}
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Stage</th>
+                        <th>Author</th>
+                        <th>Created</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody> {# contains each row of document info #}
+                    {% for doc in docs %}
+                        <tr id="{{ doc['document_id'] }}" onclick="editDocument(this)"> {# clicking a row will redirect to view page for that doc #}
+                            <td>{{ doc["document_name"] }}</td>
+                            <td>{% if doc["document_type"] == 0 %}txt{% else %}pdf{% endif %}</td> {# 0 = txt, 1 = pdf #}
+                            <td>{{ states[doc["state_id"]].docStage }}</td>
+                            <td>{{ authors[doc["author_id"] | string] }}</td>
+                            <td>{{ date_format(doc["date_created"]) }}</td>
+                            <td>{{ date_format(doc["last_updated"]) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            {% else %} {# if there are no docs say so #}
+                <h2>No documents found</h2>
+            {% endif %}
+        {% else %} {# show this if no user logged in #}
+            <h1>{% block fulltitle %}Collabinator{% endblock %}</h1>
+            <div class="main-content empty">
+                <h2>Documents Will Be Displayed Here Once You <a href="{{ url_for('auth.login') }}">Log In</a></h2>
+            </div>
+        {% endif %}
     </div>
-
-    <script>
-        function editDocument(node) {
-            url = "{{ url_for('docs.viewDocument') }}?docID=";
-            window.location.href = url + node.id;
+    {% endblock %}
+<script>
+    {% block scripts %}
+        function editDocument(node) { 
+            url = "{{ url_for('docs.viewDocument') }}?docID="; {# url is inserted by jinja, docID get variable is stored in id of the row #}
+            window.location.href = url + node.id; //redirect to url with docID from row id
         }
-    </script>
-{% endblock %}
+    {% endblock %}
+</script>
