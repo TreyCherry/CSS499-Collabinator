@@ -36,7 +36,7 @@ CREATE TABLE Documents (
     state_id INTEGER NOT NULL,
     author_id INTEGER NOT NULL,
     document_name TEXT UNIQUE NOT NULL,
-    document_filename TEXT UNIQUE NOT NULL,
+    document_type INTEGER NOT NULL,
     date_created INT NOT NULL,
     last_updated INT NOT NULL,
     FOREIGN KEY (author_id) REFERENCES Users(user_id)

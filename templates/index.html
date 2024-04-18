@@ -4,17 +4,40 @@
     <div class="display-box memberlist">
         <h1>{% block title %}Documents{% endblock %}</h1>
         <div class="top-control">
-            {% if g.stateint and check_state(g.stateint, 0) %}
+            {% if g.stateint and check_state(g.stateint, 1) %}
                 <a href="{{ url_for('docs.addDocument') }}"><button>Add New</button></a>
             {% endif %}
         </div>
         <table class="main-content hover">
         <thead>
-        
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Stage</th>
+                <th>Author</th>
+                <th>Created</th>
+                <th>Last Updated</th>
+            </tr>
         </thead>
         <tbody>
-        
+            {% for doc in docs %}
+                <tr id="{{ doc['document_id'] }}" onclick="editDocument(this)">
+                    <td>{{ doc["document_name"] }}</td>
+                    <td>{% if doc["document_type"] == 0 %}txt{% else %}doc{% endif %}</td>
+                    <td>{{ states[doc["state_id"]].docStage }}</td>
+                    <td>{{ authors[doc["author_id"] | string] }}</td>
+                    <td>{{ date_format(doc["date_created"]) }}</td>
+                    <td>{{ date_format(doc["last_updated"]) }}</td>
+                </tr>
+            {% endfor %}
         </tbody>
         </table>
-  </div>
+    </div>
+
+    <script>
+        function editDocument(node) {
+            url = "{{ url_for('docs.viewDocument') }}?docID=";
+            window.location.href = url + node.id;
+        }
+    </script>
 {% endblock %}

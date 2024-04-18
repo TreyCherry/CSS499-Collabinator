@@ -409,4 +409,12 @@ div.savewrapper {
 	background-color: var(--vdark-purple);
 }
 
-
+.docview {
+	margin: auto;
+	margin-top: 8rem;
+	display: block;
+	width: 60%;
+	height: 90vh;
+	border: none;
+	margin-bottom: 5rem;
+}

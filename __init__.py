@@ -14,7 +14,8 @@ def create_app(test_config=None):
 
     app.config.from_mapping(
         SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'CS499-Collabinator.sqlite')
+        DATABASE=os.path.join(app.instance_path, 'CS499-Collabinator.sqlite'),
+        UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents')
     )
 
     if test_config is None:
@@ -28,11 +29,17 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+    except OSError:
+        pass
+
     from . import db
     db.init_app(app)
     app.jinja_env.globals.update(get_role=db.get_role)
     app.jinja_env.globals.update(check_state=db.check_state)
     app.jinja_env.globals.update(date_format=db.date_format)
+    app.jinja_env.globals.update(date_concise=db.date_concise)
 
     from . import auth
     app.register_blueprint(auth.bp)
