@@ -1,29 +1,24 @@
-#dependencies: (pip installs)
-#   flask, flask-sqlalchemy, flask-login
 import os
 
 from flask import Flask, send_from_directory
-#from flask_sqlalchemy import SQLAlchemy
-#from flask_login import LoginManager
-
-#can replace this with whatever db instantiation we need later
-#db = SQLAlchemy()
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
+    #instantiate the flask app
 
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'CS499-Collabinator.sqlite'),
         UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents')
     )
+    #set config options
 
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
 
     else:
         app.config.from_mapping(test_config)
-
+    
     try:
         os.makedirs(app.instance_path)
     except OSError:
