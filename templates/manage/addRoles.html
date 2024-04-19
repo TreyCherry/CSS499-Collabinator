@@ -6,16 +6,16 @@
         <form id="addrole" class="main-content" method="post">
             <input id="name" placeholder="Role Name" name="role_name" required>
             <table class="main-content col-index">
-                {% for state in states %}
+                {% for state in states %} {# make a row for each state #}
                     <tr>
-                        <td>{{ state.name }}</td>
+                        <td>{{ state.name }}</td> {# write state name first #}
                         <td>
-                            <div class="checkbox">
+                            <div class="checkbox"> {# put check box next #}
                                 <input
                                 name="{{ state.id }}" 
                                 type="checkbox"
-                                {% if state.id == 0 %}checked{% endif %}>
-                                <span class="checkmark" onclick="toggleCheck(this{% if state.id == 0 %}, disableRow{% endif %})"></span>
+                                {% if state.id == 0 %}checked{% endif %}> {# read is checked by default as most roles will want to be able to read #}
+                                <span class="checkmark" onclick="toggleCheck(this{% if state.id == 0 %}, disableRow{% endif %})"></span> {# pass disable row to checkbox command #}
                             </div>
                         </td>
                     </tr>
@@ -24,12 +24,14 @@
             <textarea name="role_description" placeholder="Description (optional)"></textarea>
             <button type="submit">Create Role</button>
         </form>
-        <form method="post">
+        <form method="post"> {# separate form for cancel button #}
             <input type="hidden" name="cancel">
             <button onclick="cancelButton(this)" type="submit">Cancel</button>
         </form>
     </div>
-    <script>
+{% endblock %}
+<script>
+    {% block scripts %}
         function disableRow(node) {
             children = node.parentElement.parentElement.parentElement.parentElement.children;
             for (const child of children) {
@@ -43,5 +45,5 @@
             node.parentElement.getElementsByTagName("input")[0].value = "1";
             document.getElementById("name").removeAttribute("required");
         }
-    </script>
-{% endblock %}
+    {% endblock %}
+</script>
