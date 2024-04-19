@@ -274,11 +274,6 @@ div.savewrapper {
 	top: -0.8rem;
 }
 
-#unsaved {
-	width: 100%;
-	display: none;
-}
-
 #flashes {
 	top: 5rem;
 	left: 50%;

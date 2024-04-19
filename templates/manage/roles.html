@@ -3,53 +3,53 @@
 {% block content %}
     <div class="display-box memberlist">
         <h1>{% block title %}Roles{% endblock %}</h1>
-        <form method="post" onsubmit="setChanged()">
+        <form method="post" onsubmit="setChanged()"> {# onsubmit runs setChanged() defined below #}
             <input id="changed" name="changed" type="hidden">
             <input id="delete" name="delete" type="hidden">
             <div class="top-control">
-                <span id="unsaved">*You have unsaved changes</span>
-                <button formaction="{{ url_for('roles.addRole') }}">Add Role</button>
-                <button id="role_submit" onclick="setSubmitting(this)" disabled>Submit Changes</button>
+                <span id="unsaved" class="hidden">*You have unsaved changes</span> {# displays when there are unsaved changes #}
+                <button formaction="{{ url_for('roles.addRole') }}">Add Role</button> {# add role button redirects to add role page #}
+                <button id="role_submit" onclick="setSubmitting(this)" disabled>Submit Changes</button> {# submit button runs setSubmitting() defined below #}
             </div>
             <table class="main-content col-index">
                 <thead>
                     <tr>
                         <th>Role Name</th>
                         {% for state in states %}
-                            <th>{{ state.name }}</th>
+                            <th>{{ state.name }}</th> {# list each state name at table head #}
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for role in roles %}
-                        <tr>
+                    {% for role in roles %} {# for each role in roles table #}
+                        <tr> {# make a table row for it #}
                             <td>
-                                <i class="role-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i>
-                                <div class="savewrapper">
+                                <i class="role-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i> {# trash icon for deleting roles #}
+                                <div class="savewrapper"> {# savewrapper class is used to contain both an input and its related unsaved changes star #}
                                     <input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" default="{{ role['role_name'] }}" required>
-                                    <span class="star hidden">*</span>
+                                    <span class="star hidden">*</span> {# the star that displays when a change is made #}
                                 </div>
-                                <div class="savewrapper iconstar">
-                                    <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i>
+                                <div class="savewrapper iconstar"> {# iconstar class used to set style properties for a star that is over an icon #}
+                                    <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i> {# this toggles the description visibility of the role #}
                                     <span class="star hidden">*</span>
                                     <div class="description hidden">
                                         <h3>Description</h3>
-                                        <i class="fa-solid fa-xmark min-icon" onclick="toggleDescription(this)"></i>
+                                        <i class="fa-solid fa-xmark min-icon" onclick="toggleDescription(this)"></i> {# this closes the description #}
                                         <textarea placeholder="Enter a description (optional)" name="{{ role['role_id'] }}-d" default="{% if role['description'] %}{{ role['description'] }}{% endif %}">{% if role['description'] %}{{ role['description'] }}{% endif %}</textarea>
                                     </div>
                                 </div>
                             </td>
-                            {% for state in states %}
+                            {% for state in states %} {# give each state its own checkbox #}
                                 <td class="savewrapper">
                                     <span class="star hidden">*</span>
                                     <div class="checkbox">
                                         <input
-                                        {% if role["role_type"] != 0 %}
+                                        {% if role["role_type"] != 0 %} {# dont bother storing name if it is a root role checkbox as we are not meant to change it #}
                                         name="{{ (role['role_id'] | string) + '-' + (state.id | string) }}" 
                                         {% endif %}
                                         type="checkbox" 
-                                        {% if check_state(role["allowed_states"], state.id) %}checked{%  endif %}
-                                        {% if role["role_type"] == 0 or (state.id != 0 and not check_state(role["allowed_states"], 0) )%}disabled{% endif %}
+                                        {% if check_state(role["allowed_states"], state.id) %}checked{%  endif %} {# set it to checked if the state was already set to on #}
+                                        {% if role["role_type"] == 0 or (state.id != 0 and not check_state(role["allowed_states"], 0) )%}disabled{% endif %} {# disable checkbox when on root role or if read permission is disabled but current checkbox is not for read permission #}
                                         >
                                         <span class="checkmark" onclick="toggleCheck(this{% if state.id == 0 %}, disableRow{% endif %})"></span>
                                     </div>
@@ -61,110 +61,120 @@
             </table>
         </form>
     </div>
+{% endblock %}
 
-    <script>
-        var openDesc = null;
-        var submitting = false;
-        var lastInput = "";
-        var changelist = [];
+<script>
+    {% block scripts %}
+        var openDesc = null; //stores which role description is currently open if any
+        var submitting = false; //this is to prevent needing the user to confirm redirect before submitting
+        var lastInput = ""; //this variable restores a user input to what it was before if it is left blank and clicked off of
+        var changelist = []; //this stores this list of role info that has changed
 
-        window.addEventListener("beforeunload", (event) => {
+        window.addEventListener("beforeunload", (event) => { //before changing pages, check if there are unsaved changes and warn user about them
             if (changelist.length>0 && !submitting && !confirm())
-            event.preventDefault();
+            event.preventDefault(); //cancel redirect if user does not confirm
         });
 
-        document.addEventListener("focusout", (event) => {
-            if (event.target != null && event.target.classList.contains("rolename")) {
-                if (event.target.value == "") {
-                    event.target.value = lastInput;
-                }
-                setUnsaved(event.target);
-            }
-        });
-        document.addEventListener("focusin", (event) => {
-            if (document.activeElement != null && document.activeElement.classList.contains("rolename")) {
-                lastInput = document.activeElement.value;
-                setUnsaved(document.activeElement);
-            }
-        });
-        document.forms[0].addEventListener("keyup", (event) => {
-            if (event.target.tagName == "INPUT" || event.target.tagName == "TEXTAREA") {
-                setUnsaved(event.target);
-            }
-        });
-        document.forms[0].addEventListener("click", (event) => {
-            if (event.target.classList.contains("checkmark") && !event.target.parentElement.children[0].disabled) {
-                setUnsaved(event.target);
-            }
-        });
-        function setUnsaved(node) {
-            currentNode = node.parentElement;
-            while (!currentNode.classList.contains("savewrapper")) {
-                currentNode = currentNode.parentElement;
-            }
-            var star = currentNode.getElementsByClassName("star")[0];
-            var input = (node.parentElement.classList.contains("description")) ? currentNode.getElementsByTagName("textarea")[0] : currentNode.getElementsByTagName("input")[0];
-
-            if (star.classList.contains("hidden")) {
-                star.classList.remove("hidden");
-                if (!changelist.includes(input.name)) 
-                changelist.push(input.name);
-                document.getElementById("role_submit").disabled = false;
-                document.getElementById("unsaved").style.display = "block";
-                if (node.tagName == "SPAN") return;
-            }
-
-            if (node.tagName == "SPAN" || node.value == node.getAttribute("default")) {
-                star.classList.add("hidden");
-                changelist = changelist.splice(changelist.indexOf(input.name), changelist.indexOf(input.name));
-            } 
-            
-            if (changelist.length == 0) {
-                document.getElementById("role_submit").disabled = true;
-                document.getElementById("unsaved").style.display = "none";
-            }
-        }
-        function disableRow(node) {
-            children = node.parentElement.parentElement.parentElement.children;
-            for (const child of children) {
-                const inputField = child.getElementsByTagName("input")[0];
-                if (child.contains(node) || inputField.type != "checkbox") continue;
-                inputField.disabled = !node.parentNode.children[0].checked;
-            }
-        }
-
-        function setSubmitting(node) {
+        function setSubmitting(node) { //when submit button is pressed, set submitting to true so that previous function does not prompt for confirmation
             if (!node.disabled) {
                 submitting = true;
             }
         }
 
-        function setChanged() {
+        document.addEventListener("focusin", (event) => { //when focusing in on an element
+            if (document.activeElement != null && document.activeElement.classList.contains("rolename")) { //if the active element is rolename
+                lastInput = document.activeElement.value; //store the value of the active element in case it is left blank by time they click off of it
+                setUnsaved(document.activeElement); //also run command to check if they have unsaved changes
+            }
+        });
+
+        document.addEventListener("focusout", (event) => { //when focusing out of an element
+            if (event.target != null && event.target.classList.contains("rolename")) { //if the active element is rolename
+                if (event.target.value == "") { //if it is left blank
+                    event.target.value = lastInput; //restore it to the value it had when it was first clicked on
+                }
+                setUnsaved(event.target); //check for unsaved changes on the element
+            }
+        });
+
+        document.forms[0].addEventListener("keyup", (event) => { //when a key is pressed
+            if (event.target.tagName == "INPUT" || event.target.tagName == "TEXTAREA") { //if the target element is either an input or a textarea
+                setUnsaved(event.target); //check if unsaved changes
+            }
+        });
+
+        document.forms[0].addEventListener("click", (event) => { //any time an element is clicked on
+            if (event.target.classList.contains("checkmark") && !event.target.parentElement.children[0].disabled) { //if it is a checkmark and also not disabled
+                setUnsaved(event.target); //check for unsaved changes on the checkmark
+            }
+        });
+
+        function setUnsaved(node) { //function to check if there are unsaved changes
+            currentNode = node.parentElement; //first set currentNode to parent element of the element being passed
+            while (!currentNode.classList.contains("savewrapper")) { //while it is not at the savewrapper element
+                currentNode = currentNode.parentElement; //keep moving up the parent tree until it reaches it
+            }
+            var star = currentNode.getElementsByClassName("star")[0]; //set vars for the star, input, and unsaved changes span at the top of the page
+            var input = (node.parentElement.classList.contains("description")) ? currentNode.getElementsByTagName("textarea")[0] : currentNode.getElementsByTagName("input")[0]; //gets either input or textarea that is being changed
+            var unsavedSpan = document.getElementById("unsaved");
+
+            if (star.classList.contains("hidden")) { //if star was already hidden
+                star.classList.remove("hidden"); //show it
+                if (!changelist.includes(input.name)) //if it is not already in the list of changes add it to it
+                changelist.push(input.name);
+                document.getElementById("role_submit").disabled = false; //enable the submit button
+                if (unsavedSpan.classList.contains("hidden")) {
+                    unsavedSpan.classList.remove("hidden"); //show the unsaved changes span if it was hidden
+                }
+                if (node.tagName == "SPAN") return; //if the element clicked was a span, this is a checkbox and no further checks are needed
+            }
+
+            if (node.tagName == "SPAN" || node.value == node.getAttribute("default")) { //if this is a checkbox or another input that has been restored to its default value
+                star.classList.add("hidden"); //hide the star
+                changelist = changelist.splice(changelist.indexOf(input.name), changelist.indexOf(input.name)); //remove it from the list of changes
+            } 
+            
+            if (changelist.length == 0) { //if the changelist is now empty 
+                document.getElementById("role_submit").disabled = true; //disable the submit button
+                unsavedSpan.classList.add("hidden"); //hide the unsaved changes span
+            }
+        }
+
+        function disableRow(node) { //disables the rest of the row
+            children = node.parentElement.parentElement.parentElement.children;
+            for (const child of children) {
+                const inputField = child.getElementsByTagName("input")[0];
+                if (child.contains(node) || inputField.type != "checkbox") continue; //do disable the checkbox that called the function or disable any non-checkboxes
+                inputField.disabled = !node.parentNode.children[0].checked; //the input field is disabled if the checkbox is not checked
+            }
+        }
+
+        function setChanged() { //sets the hidden input to a stringified list of changes separated by commas
             var changestr = changelist.toString();
             document.getElementById("changed").value = changestr;
         }
 
-        function deleteRole(node) {
-            var input = node.parentElement.getElementsByTagName("input")[0];
+        function deleteRole(node) { //deletes the role of the row that the trashcan was clicked on in
+            var input = node.parentElement.getElementsByTagName("input")[0]; //get the input to find the role id to delete
             if (node.classList.contains("disabled") || !confirm("This will permanently delete Role: \"" + input.getAttribute("default") +"\".\nContinue?"))
-            return;
-            document.getElementById("delete").value = input.name;
-            input.form.submit();
+            return; //cancel if the button is disabled, or if the user does not confirm the deletion
+            document.getElementById("delete").value = input.name; //set the hidden input named delete to the role id to be deleted
+            input.form.submit(); //submit the form
         }
 
-        function toggleDescription(node) {
-            description = node.parentElement;
+        function toggleDescription(node) { //function to toggle visibility of the description
+            description = node.parentElement; //get the description container
             if (!description.classList.contains("description"))
-                description = description.getElementsByClassName("description")[0];
+                description = description.getElementsByClassName("description")[0]; //make sure we are actually on the description container
             
-            if (description.classList.contains("hidden")) {
+            if (description.classList.contains("hidden")) { //if the description is hidden then show it
                 description.classList.remove("hidden");
-                if (openDesc != null) toggleDescription(openDesc);
-                openDesc = node;
-            } else {
+                if (openDesc != null) toggleDescription(openDesc); //check if there is already an open description and close it
+                openDesc = node; //set the global openDesc variable to be the current description
+            } else { //if the description is not hidden then hide it
                 description.classList.add("hidden");
-                openDesc = null;
+                openDesc = null; //set openDesc back to null
             }
         }
-    </script>
-{% endblock %}
+    {% endblock %}
+</script>

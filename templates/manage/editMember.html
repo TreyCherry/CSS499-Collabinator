@@ -1,33 +1,33 @@
-{% extends "auth/register.html" %}
-{% from "auth/register.html" import value %}
+{% extends "auth/register.html" %} {# extends register template because it is almost identical form wise #}
+{% from "auth/register.html" import value %} 
 
 
-{% block title %}Edit Member{% endblock %}
+{% block title %}Edit Member{% endblock %} {# set title here #}
 
-{% block passwordinfo %}placeholder="New Password (unchanged)"{% endblock  %}
+{% block passwordinfo %}placeholder="New Password (unchanged)"{% endblock %} {# set password placeholder to unchanged #}
 
-{% block other %}
+{% block other %} {# other defined block in register.html #}
     <label for="role_id">Role: </label>
-    <select name="role_id">
-        {% for role in roles %}
-            <option value="{{role['role_id']}}" {% if member and role["role_id"] == member["role_id"]%}selected{% endif %}>{{role["role_name"]}}</option>
+    <select name="role_id"> {# drop down for role select #}
+        {% for role in roles %} {# fill the options with the list of roles #}
+            <option value="{{role['role_id']}}" {% if member and role["role_id"] == member["role_id"]%}selected{% endif %}>{{role["role_name"]}}</option> {# if the target user has this role then mark it as selected #}
         {% endfor %}
     </select>
 {% endblock %}
 
-{% block submit %}Submit{% endblock %}
-{% block extrabutton %}
+{% block submit %}Submit{% endblock %} {# set submit button text here #}
+{% block extrabutton %} {# extra button is defined outside the main form #}
 <form method="post">
-    <input type="hidden" name="delete" id="delete" value="0">
-    <button onclick="removeButton();" id="remove" {% if member["user_id"] == 1 %}disabled{% endif %}>Remove User</button>
+    <input type="hidden" name="delete" id="delete" value="0"> {# hidden input for checking if user should be deleted #}
+    <button onclick="removeButton();" id="remove" {% if member["user_id"] == 1 %}disabled{% endif %}>Remove User</button> {# disable remove button if user is root admin #}
     <button type="submit">Cancel</button>
 </form>
 {% endblock %}
 <script>
 {% block scripts %}
     function removeButton() {
-        if (confirm("This will permanently remove the user. Press OK to confirm.")) {
-            document.getElementById("delete").value = "1";
+        if (confirm("This will permanently remove the user. Press OK to confirm.")) { // confirm that user will be deleted
+            document.getElementById("delete").value = "1"; //if they confirm then set delete to 1 and submit the form
             this.form.submit();
         }
     }
