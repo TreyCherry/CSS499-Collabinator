@@ -14,7 +14,7 @@ RUN pip3 install -r requirements.txt
 
 RUN git clone https://github.com/TreyCherry/CSS499-Collabinator.git
 
-
+RUN python -m flask --app CSS499-Collabinator init-db
 
 # CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
 CMD [ "python3", "-m" , "flask", "--app", "CSS499-Collabinator", "run", "--host=0.0.0.0"]
