@@ -55,6 +55,9 @@ def create_app(test_config=None):
     app.register_blueprint(roles.bp, url_prefix=None) #register roles blueprint
     app.add_url_rule('/roles', endpoint='roles') #ensure roles routes correctly
 
+    from . import alerts
+    app.register_blueprint(alerts.bp, url_prefix=None) #register alerts blueprint
+
     @app.route('/favicon.ico') #set the icon to be used in the browser
     def favicon():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')

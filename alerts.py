@@ -1,18 +1,28 @@
 from flask import (
-    Blueprint, jsonify, request, session, redirect, url_for, flash
+    Blueprint, g, render_template
 )
 
 from .auth import login_required
 
 from .db import (
-    get_alerts_by_user_id, add_alert, mark_alert_as_read_in_db, delete_alert_from_db, get_user_by_id
+    get_alerts_by_id
 )
 
-bp = Blueprint('alerts', __name__, url_prefix='/alerts')  # Setup Blueprint
+bp = Blueprint('alerts', __name__)  # Setup Blueprint
 
-@bp.route('/', methods=['GET'])  # Fetch alerts route
+@bp.route('/alerts')  # Fetch alerts route
 @login_required
 def get_alerts():
-    user_id = session.get('user_id')  # Get user ID from session
-    alerts = get_alerts_by_user_id(user_id)  # Fetch alerts from DB
-    return jsonify({'status': 'success', 'alerts': alerts}), 200  # Return alerts
+    user_id = g.user['user_id'] # Get user ID 
+    alerts = get_alerts_by_id(user_id)  # Fetch alerts from DB
+    return render_template('alerts.html', alerts=alerts)
+
+
+def make_alert_message(message_type, **kwargs): #specify message type and pass args that are related to that message
+    match message_type:
+        case "new_user":
+            return f"New user created with email: {kwargs['email']}" #for example this one would be make_alert_message("new_user", email="a@a.com")
+        case "new_document":
+            return f"Document Update: Document \"{kwargs['document_name']}\" in stage \"{kwargs['stage']}\""
+        case _:
+            return None #if message type doesn't exist, return None

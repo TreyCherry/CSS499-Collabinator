@@ -334,6 +334,29 @@ def remove_role(id): #remove role by id
     
     #alerts.py functions 
     
+
+def get_alerts_by_id(id):
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Alerts WHERE user_id = ?', (id,)
+    ).fetchall()
+
+def add_alert(for_user, message, link=None):
+    columns = "user_id, message, date_created"
+    qmarks = "?, ?, ?"
+    values = [for_user, message, new_date()]
+    if link is not None:
+        columns += ", link"
+        qmarks += ", ?"
+        values.append(link)
+    db = get_db()
+    db.execute(
+        'INSERT INTO Alerts (' + columns + ') VALUES (' + qmarks + ')',
+        tuple(values)
+    )
+    db.commit()
+
+'''
 def update_document_stage(document_id, new_stage):
     # Update stage if changed
     current_stage = get_document_stage(document_id)
@@ -368,3 +391,4 @@ def add_alert(user_id, description, link):
     query = "INSERT INTO Alerts (user_id, link, date_created, description) VALUES (?, ?, ?, ?)"
     db.execute(query, (user_id, link, date_created, description))
     db.commit()  # Commit the transaction
+'''
