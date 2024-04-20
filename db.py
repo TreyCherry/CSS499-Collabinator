@@ -136,7 +136,7 @@ def flip_states(stateint, ids): #flip the values of the bits of a stateint at th
     return stateint ^ newstates #exclusive or flips the bits specified
 
 def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
-    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    return int(datetime.datetime.now().strftime("%YYYY%mm%dd%HH%MM%SS"))
 
 def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
     components = []
@@ -147,16 +147,23 @@ def date_format(date): #take a formatted date integer and return a readable stri
     components.reverse() #reverse the list so that it is in the correct order
     return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
 
-'''
+
 def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    newdate = (date//100)*100 #start out by chopping first 2 digits then rounding back up
-    datestring = date_format(date) #get formatted date string
-    while newdate > 0 and newdate != date: #repeat until newdate is 0 or newdate is the same as date
-        newdate=newdate//100 #divided 
-        date=date//100
-        datestring = datestring[:-3] #chop 3 characters off the end of string for each iteration
-    return datestring #return the chopped string
-'''
+    datepart = date // 10**10 #only the year first 
+    relativeTime = datepart 
+    i = 5
+    while datepart == date // 10**(i*2) and i > 0:
+        datepart = date // 10**(i*2)
+        relativeTime = datepart % 100
+        i -= 1
+    if i==0 and datepart < 10:
+        return "just now"
+    
+    timeUnits = ["second", "minute", "hour", "day", "month", "year"]
+
+    return f"{relativeTime} {timeUnits[i]}" + (relativeTime > 1 and 's') + " ago"
+
+
 
 def get_db(): #get the database connection
     if 'db' not in g: #check if db is already stored
