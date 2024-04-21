@@ -76,8 +76,8 @@ CREATE TABLE DocReviewers ( --table of document reviewers
 CREATE TABLE Alerts ( --table of alerts
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL, --user the alert is for by id
-    link TEXT NOT NULL, --link attached to alert
+    message TEXT NOT NULL, --message of the alert
+    link TEXT, --link attached to alert
     date_created INT NOT NULL, --date the alert was created
-    description TEXT NOT NULL, --description of the alert
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );

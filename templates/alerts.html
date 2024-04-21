@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="display-box wider">
+    <h1>{% block title %}Alerts{% endblock %}</h1>
+    <hr>
+    <ul class="alerts main-content">
+    {% if alerts %}
+    {% for alert in alerts %}
+        <li {% if alert['link'] %}onclick="goToLink('{{ alert['link'] }}')"{% endif %}>{{ alert['message'] }}</li>
+    {% endfor %}
+    {% else %}
+        <li>No alerts found.</li>
+    {% endif %}
+    </ul>
+</div>
+{% endblock %}
+
+<script>
+    {% block scripts %}
+        function goToLink(link) {
+            window.location.href = link;
+        }
+    {% endblock %}
+</script>

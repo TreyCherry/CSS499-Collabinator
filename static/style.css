@@ -421,3 +421,26 @@ div.savewrapper {
 .empty h2 {
 	margin-top: 30vh;
 }
+
+.alerts {
+	list-style: none;
+	padding: 0;
+	height: 40vh;
+}
+
+.alerts li {
+	display: block;
+	font-size: 1.2rem;
+	border: var(--darker-purple) 1px solid;
+	padding: 1rem;
+	padding-left: 1.5rem;
+	text-align: left;
+}
+
+.wider {
+	width: 30rem;
+}
+
+hr {
+	border-color: var(--darker-purple);
+}

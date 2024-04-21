@@ -37,7 +37,7 @@ def create_app(test_config=None):
     app.jinja_env.globals.update(get_role=db.get_role)
     app.jinja_env.globals.update(check_state=db.check_state)
     app.jinja_env.globals.update(date_format=db.date_format)
-    #app.jinja_env.globals.update(date_concise=db.date_concise)
+    app.jinja_env.globals.update(date_concise=db.date_concise)
 
     from . import auth
     app.register_blueprint(auth.bp) #register auth blueprint
@@ -54,6 +54,10 @@ def create_app(test_config=None):
     from . import roles
     app.register_blueprint(roles.bp, url_prefix=None) #register roles blueprint
     app.add_url_rule('/roles', endpoint='roles') #ensure roles routes correctly
+
+    from . import alerts
+    app.register_blueprint(alerts.bp, url_prefix=None) #register alerts blueprint
+    app.add_url_rule('/alerts', endpoint='alerts') #ensure alerts routes correctly
 
     @app.route('/favicon.ico') #set the icon to be used in the browser
     def favicon():

@@ -136,7 +136,7 @@ def flip_states(stateint, ids): #flip the values of the bits of a stateint at th
     return stateint ^ newstates #exclusive or flips the bits specified
 
 def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
-    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    return int(datetime.datetime.now().strftime("%YYYY%mm%dd%HH%MM%SS"))
 
 def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
     components = []
@@ -147,16 +147,23 @@ def date_format(date): #take a formatted date integer and return a readable stri
     components.reverse() #reverse the list so that it is in the correct order
     return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
 
-'''
+
 def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    newdate = (date//100)*100 #start out by chopping first 2 digits then rounding back up
-    datestring = date_format(date) #get formatted date string
-    while newdate > 0 and newdate != date: #repeat until newdate is 0 or newdate is the same as date
-        newdate=newdate//100 #divided 
-        date=date//100
-        datestring = datestring[:-3] #chop 3 characters off the end of string for each iteration
-    return datestring #return the chopped string
-'''
+    datepart = date // 10**10 #only the year first 
+    relativeTime = datepart 
+    i = 5
+    while datepart == date // 10**(i*2) and i > 0:
+        datepart = date // 10**(i*2)
+        relativeTime = datepart % 100
+        i -= 1
+    if i==0 and datepart < 10:
+        return "just now"
+    
+    timeUnits = ["second", "minute", "hour", "day", "month", "year"]
+
+    return f"{relativeTime} {timeUnits[i]}" + (relativeTime > 1 and 's') + " ago"
+
+
 
 def get_db(): #get the database connection
     if 'db' not in g: #check if db is already stored
@@ -331,3 +338,64 @@ def remove_role(id): #remove role by id
 
     db.execute('DELETE FROM Roles WHERE role_id = ?', (id,)) #then delete the role
     db.commit()
+    
+    #alerts.py functions 
+    
+
+def get_alerts_by_id(id):
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Alerts WHERE user_id = ?', (id,)
+    ).fetchall()
+
+def add_alert(for_user, message, link=None):
+    columns = "user_id, message, date_created"
+    qmarks = "?, ?, ?"
+    values = [for_user, message, new_date()]
+    if link is not None:
+        columns += ", link"
+        qmarks += ", ?"
+        values.append(link)
+    db = get_db()
+    db.execute(
+        'INSERT INTO Alerts (' + columns + ') VALUES (' + qmarks + ')',
+        tuple(values)
+    )
+    db.commit()
+
+'''
+def update_document_stage(document_id, new_stage):
+    # Update stage if changed
+    current_stage = get_document_stage(document_id)
+    if current_stage != new_stage:
+        query = "UPDATE Document SET document_stage=? WHERE document_id=?"
+        execute_query(query, (new_stage, document_id))
+        connection.commit()
+        generate_alert(document_id, new_stage)  # Notify change
+
+def generate_alert(document_id, new_stage):
+    # Create change notification
+    alert_message = f"Document {document_id} stage changed to {STATES[new_stage].name}"
+    recipient_id = get_document_assigned_employee(document_id)
+    add_alert(recipient_id, alert_message)  # Add alert to DB
+
+def get_document_stage(document_id):
+    # Fetch document stage
+    query = "SELECT document_stage FROM Document WHERE document_id=?"
+    result = execute_query(query, (document_id,))
+    return result.fetchone()[0]
+
+def get_document_assigned_employee(document_id):
+    # Get document's assigned employee
+    query = "SELECT assigned_employee FROM Document WHERE document_id=?"
+    result = execute_query(query, (document_id,))
+    return result.fetchone()[0]
+
+def add_alert(user_id, description, link):
+    #Inserts an alert into the database.
+    db = get_db()  # Get database connection from Flask g context
+    date_created = int(datetime.datetime.now().timestamp())  # UNIX timestamp for creation date
+    query = "INSERT INTO Alerts (user_id, link, date_created, description) VALUES (?, ?, ?, ?)"
+    db.execute(query, (user_id, link, date_created, description))
+    db.commit()  # Commit the transaction
+'''
