@@ -5,6 +5,8 @@ from flask import current_app, g, flash
 from werkzeug.security import generate_password_hash, gen_salt
 from werkzeug.utils import secure_filename
 
+import comtypes.client #needed for docx conversion
+
 import os
 
 from dataclasses import dataclass
@@ -363,6 +365,27 @@ def add_alert(for_user, message, link=None):
     )
     db.commit()
 
+def convert_to_pdf(input_file):
+    file_extension = os.path.splitext(input_file)[1].lower()
+    abs_input_file = os.path.abspath(input_file)
+    abs_output_file = os.path.splitext(abs_input_file)[0] + '.pdf'
+
+    if file_extension in ['.doc', '.docx', '.rtf']:  # Handle Word and RTF files
+        app = comtypes.client.CreateObject('Word.Application')
+        doc = app.Documents.Open(abs_input_file)
+        doc.SaveAs(abs_output_file, FileFormat=17)  # wdFormatPDF
+        doc.Close()
+        app.Quit()
+    elif file_extension in ['.ppt', '.pptx']:  # Handle PowerPoint files
+        app = comtypes.client.CreateObject('PowerPoint.Application')
+        presentation = app.Presentations.Open(abs_input_file)
+        presentation.SaveAs(abs_output_file, FileFormat=32)  # ppSaveAsPDF
+        presentation.Close()
+        app.Quit()
+    else:
+        raise ValueError("Unsupported file type.")
+
+    return abs_output_file
 '''
 def update_document_stage(document_id, new_stage):
     # Update stage if changed
