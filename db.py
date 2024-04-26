@@ -11,6 +11,7 @@ import os
 
 from dataclasses import dataclass
 import datetime
+from math import floor, log10
 
 # this file is for handling all database operations
 
@@ -138,7 +139,7 @@ def flip_states(stateint, ids): #flip the values of the bits of a stateint at th
     return stateint ^ newstates #exclusive or flips the bits specified
 
 def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
-    return int(datetime.datetime.now().strftime("%YYYY%mm%dd%HH%MM%SS"))
+    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 
 def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
     components = []
@@ -151,19 +152,20 @@ def date_format(date): #take a formatted date integer and return a readable stri
 
 
 def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    datepart = date // 10**10 #only the year first 
-    relativeTime = datepart 
-    i = 5
-    while datepart == date // 10**(i*2) and i > 0:
-        datepart = date // 10**(i*2)
-        relativeTime = datepart % 100
-        i -= 1
-    if i==0 and datepart < 10:
-        return "just now"
+    now = new_date() #get current time for comparison
+    relativeTime = now - date #get time difference
+    try: #if relative time is 0 or less it will return domain error
+        i = floor(log10(relativeTime)/2)
+    except: #assume time change is 0
+        i = 0
+    i = i>5 and 5 or i #max index is 5, or where the year is
+    datepart = relativeTime // 100**(i) #shorten down the time difference to only apply to the significant difference
+    if i==0 and datepart < 10: #if time difference is less than 10 seconds
+        return "just now" #say "just now"
     
-    timeUnits = ["second", "minute", "hour", "day", "month", "year"]
+    timeUnits = ["second", "minute", "hour", "day", "month", "year"] #list of time units 
 
-    return f"{relativeTime} {timeUnits[i]}" + (relativeTime > 1 and 's') + " ago"
+    return f"{datepart} {timeUnits[i]}" + (relativeTime > 1 and 's') + " ago" #return relative concise time difference
 
 
 

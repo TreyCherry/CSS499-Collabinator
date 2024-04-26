@@ -26,7 +26,7 @@
                         <td>{{ get_role(member["role_id"])["role_name"] }}</td> {# use member's role id to get role name, uses get_role defined in db.py (this only works because it is defined in jinja global scope in init.py)#}
                         <td>{{ date_format(member["date_registered"]) }}</td> {# date_format is also defined in db.py and is also included in jinja global scope #}
                         <td>{% if member["last_active"] %} {# not all members have had last active set, if they never logged in, so check that it is set #}
-                            {{ date_format(member["last_active"]) }} {# get the formatted date of last active #}
+                            {{ date_concise(member["last_active"]) }} {# get the formatted date of last active #}
                         {% else %}
                             Never Logged In {# if member has never logged in, show this #}
                         {% endif %}</td>
