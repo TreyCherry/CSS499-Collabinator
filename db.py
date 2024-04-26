@@ -28,7 +28,7 @@ class State: #dataclass for storing important information associated with states
 # id matches index which is useful for jinja templates
 STATES = [
     State(0, "Read", "Read Only", "Read Documents"),
-    State(1, "Upload", "Updated", "Upload Documents"),
+    State(1, "Upload", "Upload", "Upload Documents"),
     State(2, "Approve", "Awaiting Approval", "Approve Documents For Review"),
     State(3, "Select", "Select Reviewers", "Select Reviewers"),
     State(4, "Comment", "Ready for Review", "Comment on Documents"),
@@ -60,9 +60,13 @@ def upload_file(file, author_id): #handle uploading a file from file input
         flash('Document already exists')
         return False
     
-    update_document(name, type, author_id) #update document will add a new document or update an existing one
-    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the file to the configured folder
+    try:
+        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the file to the configured folder
+    except:
+        flash('File could not be saved')
+        return False
     
+    update_document(name, type, author_id) #update document will add a new document or update an existing one
     return True #file upload succeeded
 
 def get_name_type(filename): #get both name without extension and 2 value file type
@@ -161,9 +165,9 @@ def date_concise(date): #return a shortened version of date_format that only spe
     i = i>5 and 5 or i #max index is 5, or where the year is
     datepart = relativeTime // 100**(i) #shorten down the time difference to only apply to the significant difference
     if i==0 and datepart < 10: #if time difference is less than 10 seconds
-        return "just now" #say "just now"
+        return "Just Now" #say "just now"
     
-    timeUnits = ["second", "minute", "hour", "day", "month", "year"] #list of time units 
+    timeUnits = ["Second", "Minute", "Hour", "Day", "Month", "Year"] #list of time units 
 
     return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
 

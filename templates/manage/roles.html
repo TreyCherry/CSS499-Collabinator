@@ -24,13 +24,13 @@
                     {% for role in roles %} {# for each role in roles table #}
                         <tr> {# make a table row for it #}
                             <td>
-                                <i class="role-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i> {# trash icon for deleting roles #}
+                                <i class="click-icon fa-regular fa-trash-can{% if role['role_type'] == 0 %} disabled{% endif %}" onclick="deleteRole(this)"></i> {# trash icon for deleting roles #}
                                 <div class="savewrapper"> {# savewrapper class is used to contain both an input and its related unsaved changes star #}
                                     <input class="rolename" name="{{ role['role_id'] }}" placeholder="Enter Role Name" type="text" value="{{ role['role_name'] }}" default="{{ role['role_name'] }}" required>
                                     <span class="star hidden">*</span> {# the star that displays when a change is made #}
                                 </div>
                                 <div class="savewrapper iconstar"> {# iconstar class used to set style properties for a star that is over an icon #}
-                                    <i class="role-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i> {# this toggles the description visibility of the role #}
+                                    <i class="click-icon fa-solid fa-circle-info" onclick="toggleDescription(this)"></i> {# this toggles the description visibility of the role #}
                                     <span class="star hidden">*</span>
                                     <div class="description hidden">
                                         <h3>Description</h3>

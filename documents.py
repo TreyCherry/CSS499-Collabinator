@@ -74,9 +74,12 @@ def viewDocument():
 
     if request.args.get("docID"): #if docID is in the url
         doc = get_doc_by_id(request.args.get("docID")) #get the document from the database
+        docstate = doc["state_id"]
+        if docstate == 2 and not check_state(g.stateint, 2): #check if document is in review stage
+            return redirect(url_for('index')) #if user does not have mark for review role then redirect 
         
         filename = get_filename(doc) #get the full filename of the document
 
-        return render_template('docview/viewDocument.html', activeNav="docs", filename=filename) #render the html page with the filename passed to it
+        return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate) #render the html page with the filename passed to it
     
     return redirect(url_for('index')) #if docID is not in the url then take them back to home page

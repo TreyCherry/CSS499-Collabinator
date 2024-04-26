@@ -3,5 +3,28 @@
 {% block title %}View Document{% endblock %}
 
 {% block content %}
+    {% if docstate == 2 %}
+        <div class="top-box">
+            <span id="unhide" class="hidden">Document Awaiting Approval</span>
+            <div id="hide-box">
+                <h2>Document Awaiting Approval</h2>
+                <span>Mark the document as approved for review?</span>
+                <i class="click-icon fa-solid fa-check big"></i>
+                <i class="click-icon fa-solid fa-xmark big"></i>
+            </div>
+            <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
+        </div>
+    {% endif %}
     <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
 {% endblock %}
+
+<script>
+    {% block scripts %}
+        function hideBox(node) {
+            document.getElementById("hide-box").classList.toggle("hidden");
+            document.getElementById("unhide").classList.toggle("hidden");
+            node.classList.toggle("fa-angle-up");
+            node.classList.toggle("fa-angle-down");
+        }
+    {% endblock %}
+</script>
