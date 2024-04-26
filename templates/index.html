@@ -28,8 +28,8 @@
                             <td>{% if doc["document_type"] == 0 %}txt{% else %}pdf{% endif %}</td> {# 0 = txt, 1 = pdf #}
                             <td>{{ states[doc["state_id"]].docStage }}</td>
                             <td>{{ authors[doc["author_id"] | string] }}</td>
-                            <td>{{ date_format(doc["date_created"]) }}</td>
-                            <td>{{ date_format(doc["last_updated"]) }}</td>
+                            <td>{{ date_concise(doc["date_created"]) }}</td>
+                            <td>{{ date_concise(doc["last_updated"]) }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
