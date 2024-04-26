@@ -165,7 +165,7 @@ def date_concise(date): #return a shortened version of date_format that only spe
     
     timeUnits = ["second", "minute", "hour", "day", "month", "year"] #list of time units 
 
-    return f"{datepart} {timeUnits[i]}" + (relativeTime > 1 and 's') + " ago" #return relative concise time difference
+    return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
 
 
 
