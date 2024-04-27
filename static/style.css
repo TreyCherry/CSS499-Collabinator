@@ -17,6 +17,10 @@ body {
 	padding: 0;
 }
 
+.relative-container {
+	position: relative;
+}
+
 .display-box {
 	width: 20rem;
 	text-align: center;
@@ -91,6 +95,21 @@ body {
 	position: absolute;
 	right: 1.2rem;
 	bottom: 1.2rem;
+}
+
+.right-box {
+	position: absolute;
+	right: 8rem;
+	top: 8rem;
+	border: var(--darker-purple) 1px solid;
+	background-color: var(--dark-purple);
+	filter: brightness(0.9);
+	border-radius: 5px;
+	min-height: 20rem;
+}
+.right-box i {
+	display: block;
+	margin: 2rem 1.6rem;
 }
 
 .rolename {
@@ -376,6 +395,7 @@ div.savewrapper {
 	border-top: none;
 	opacity: 0.9;
 	border-radius: 5px;
+	z-index: 5;
 }
 
 .top-box h2 {
@@ -400,7 +420,7 @@ div.savewrapper {
 	position: fixed;
 	width: 100%;
 	top: 0;
-	z-index: 1;
+	z-index: 10;
 }
 
 .topnav ul {

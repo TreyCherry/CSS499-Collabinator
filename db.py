@@ -98,8 +98,15 @@ def get_doc_by_id(id): #search database for document by id
 def get_documents(): #get all documents in database
     db = get_db()
     return db.execute(
-        'SELECT * FROM Documents ORDER BY document_name'
+        'SELECT * FROM Documents ORDER BY last_updated DESC'
     ).fetchall()
+
+def remove_document(id): #remove a document by id
+    db = get_db()
+    filename = get_filename(get_doc_by_id(id)) #get the filename of the document
+    os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
+    db.commit() #commit the update
 
 def update_document(name, type, author_id): #update document will add a new document or update an existing one
     db = get_db()
