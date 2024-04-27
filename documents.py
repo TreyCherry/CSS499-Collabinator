@@ -6,10 +6,11 @@ from werkzeug.exceptions import abort
 
 from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
-    get_doc_by_id, get_filename
+    get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
+    get_roles_by_state
 )
 from .auth import login_required
-
+from .alerts import make_alert_message
 import os
 
 bp = Blueprint('index', __name__) #first blueprint is only for index so it can be routed at root
@@ -66,17 +67,46 @@ def viewer():
 
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], request.args.get("filename"), mimetype=type) #send the file with the specified mimetype
 
-@bp2.route('/view')
+@bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
 def viewDocument():
     if not check_state(g.stateint, 0): #if user does not have read permissions
         return redirect(url_for('index')) #take them back to home page
 
-    if request.args.get("docID"): #if docID is in the url
-        doc = get_doc_by_id(request.args.get("docID")) #get the document from the database
-        
-        filename = get_filename(doc) #get the full filename of the document
-
-        return render_template('docview/viewDocument.html', activeNav="docs", filename=filename) #render the html page with the filename passed to it
+    if not request.args.get("docID"): #if docID is in the url
+        return redirect(url_for('index')) #if docID is not in the url then take them back to home page
     
-    return redirect(url_for('index')) #if docID is not in the url then take them back to home page
+    docID = request.args.get("docID")
+    doc = get_doc_by_id(docID) #get the document from the database
+    docstate = doc["state_id"]
+    isAuthor = doc["author_id"] == g.user["user_id"]
+    filename = get_filename(doc) #get the full filename of the document
+    
+    if docstate == 2 and not check_state(g.stateint, 2) and not isAuthor: #check if document is in review stage
+        return redirect(url_for('index')) #if user does not have mark for review role then redirect 
+    
+    if request.method == 'POST': #if the form is submitted
+        action = request.form.get("action") #get the action from the form
+        match action: #if the action is approve
+            case "approve":
+                set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
+                message = make_alert_message("doc_approved", document_name=doc["document_name"]) #create an alert message
+                link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
+                roles = get_roles_by_state(3) #get the roles that have select reviewer permissions
+                author = get_user_by_id(doc["author_id"]) #author user info
+                authorDone = False #initialize to false
+                for role in roles: #alert each role
+                    add_alert_by_role(role["role_id"], message, link)
+                    if author["role_id"] == role["role_id"]:
+                        authorDone = True #if author role can select viewers they already received alert
+                if not authorDone: #if author hasnt already gotten an alert
+                    add_alert_by_id(doc["author_id"], message, link) #add an alert to the author of the document
+
+                flash("Document approved!")
+            case "reject":
+                pass
+            case _:
+                return redirect(url_for('docs.viewDocument'))
+
+    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate) #render the html page with the filename passed to it
+    

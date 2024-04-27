@@ -4,15 +4,18 @@
 <div class="display-box wider">
     <h1>{% block title %}Alerts{% endblock %}</h1>
     <hr>
-    <ul class="alerts main-content">
+    <table class="alerts main-content">
     {% if alerts %}
     {% for alert in alerts %}
-        <li {% if alert['link'] %}onclick="goToLink('{{ alert['link'] }}')"{% endif %}>{{ alert['message'] }}</li>
+    <tr>
+        <td {% if alert['link'] %}onclick="goToLink('{{ alert['link'] }}')"{% endif %}>{{ alert['message'] }}</td>
+        <td class="date">{{ date_concise(alert['date_created']) }}</td>
+    </tr>
     {% endfor %}
     {% else %}
-        <li>No alerts found.</li>
+        <tr class="disabled">No alerts found.</tr>
     {% endif %}
-    </ul>
+    </table>
 </div>
 {% endblock %}
 
