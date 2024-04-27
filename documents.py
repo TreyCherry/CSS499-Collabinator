@@ -7,7 +7,7 @@ from werkzeug.exceptions import abort
 from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
-    get_roles_by_state
+    get_roles_by_state, remove_document
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -79,6 +79,7 @@ def viewDocument():
     docID = request.args.get("docID")
     doc = get_doc_by_id(docID) #get the document from the database
     docstate = doc["state_id"]
+    docAuthor = get_user_by_id(doc["author_id"])
     isAuthor = doc["author_id"] == g.user["user_id"]
     filename = get_filename(doc) #get the full filename of the document
     
@@ -87,17 +88,19 @@ def viewDocument():
     
     if request.method == 'POST': #if the form is submitted
         action = request.form.get("action") #get the action from the form
+        link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
         match action: #if the action is approve
             case "approve":
+                if not isAuthor and not check_state(g.stateint, 2): #if user is not author and not reviewer
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
                 set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
                 message = make_alert_message("doc_approved", document_name=doc["document_name"]) #create an alert message
-                link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
                 roles = get_roles_by_state(3) #get the roles that have select reviewer permissions
-                author = get_user_by_id(doc["author_id"]) #author user info
                 authorDone = False #initialize to false
                 for role in roles: #alert each role
                     add_alert_by_role(role["role_id"], message, link)
-                    if author["role_id"] == role["role_id"]:
+                    if docAuthor["role_id"] == role["role_id"]:
                         authorDone = True #if author role can select viewers they already received alert
                 if not authorDone: #if author hasnt already gotten an alert
                     add_alert_by_id(doc["author_id"], message, link) #add an alert to the author of the document
@@ -105,8 +108,16 @@ def viewDocument():
                 flash("Document approved!")
             case "reject":
                 pass
+            case "remove":
+                if isAuthor or check_state(g.stateint, 2): #if user is author or doc approver
+                    docName = get_doc_by_id(docID)["document_name"]
+                    remove_document(docID) #remove the document
+                    message = make_alert_message("doc_removed", document_name=docName) #create an alert message
+                    add_alert_by_id(doc["author_id"], message) #alert the author
+                    flash(f"Document \"{docName}\" successfully removed.")
+                    return redirect(url_for('index')) #go back to home page
             case _:
-                return redirect(url_for('docs.viewDocument'))
+                return redirect(link)
 
     return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate) #render the html page with the filename passed to it
     

@@ -26,5 +26,7 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
             return f"Document Update: Document \"{kwargs['document_name']}\" uploaded. \"{kwargs['stage_desc']}\""
         case "doc_approved":
             return f"Document Update: Document \"{kwargs['document_name']}\" approved for review, take action now to select reviewers."
+        case "doc_removed":
+            return f"Document Update: Document \"{kwargs['document_name']}\" has been removed."
         case _:
             return None #if message type doesn't exist, return None

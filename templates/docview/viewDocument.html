@@ -14,17 +14,20 @@
         </div>
         <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
     </div>
-    <form method="post">
-        <input type="hidden" id="docAction" name="action" value="none">
-    </form>
 {% endmacro %}
 
 {% block title %}View Document{% endblock %}
 
 {% block content %}
+    <form method="post">
+        <input type="hidden" id="docAction" name="action" value="none">
+    </form>
     {% if docstate == 2 and check_state(g.stateint, 2)%}
         {{ topBox("Document Awaiting Approval", 0) }}
     {% endif %}
+    <div class="right-box">
+        <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove', 'Are you sure you want to permanently delete this document?')"></i>
+    </div>
     <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
 {% endblock %}
 
@@ -36,10 +39,10 @@
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action, confirm="") {
+        function setAction(action, confirmMessage="") {
             actionInput = document.getElementById("docAction");
             actionInput.value = action;
-            if (confirm.length == 0 || confirm(confirm)) {
+            if (confirmMessage.length == 0 || confirm(confirmMessage)) {
                 actionInput.form.submit();
             }
         }

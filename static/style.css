@@ -93,6 +93,22 @@ body {
 	bottom: 1.2rem;
 }
 
+.right-box {
+	position: fixed;
+	right: 8rem;
+	top: 10rem;
+	border: var(--darker-purple) 1px solid;
+	background-color: var(--dark-purple);
+	filter: brightness(0.9);
+	padding: 2rem 0.6rem;
+	border-radius: 5px;
+	min-height: 20rem;
+}
+.right-box i {
+	display: block;
+	margin: 0.5rem 1rem;
+}
+
 .rolename {
 	display: inline-block;
 }
