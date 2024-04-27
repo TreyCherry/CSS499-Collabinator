@@ -25,10 +25,12 @@
     {% if docstate == 2 and check_state(g.stateint, 2)%}
         {{ topBox("Document Awaiting Approval", 0) }}
     {% endif %}
-    <div class="right-box">
-        <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove', 'Are you sure you want to permanently delete this document?')"></i>
+    <div class="relative-container">
+        <div class="right-box">
+            <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove', 'Are you sure you want to permanently delete this document?')"></i>
+        </div>
+        <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
-    <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
 {% endblock %}
 
 <script>
