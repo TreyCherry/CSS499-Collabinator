@@ -107,7 +107,15 @@ def viewDocument():
 
                 flash("Document approved!")
             case "reject":
-                pass
+                if check_state(g.stateint, 2): #if user is approver
+                    docName = get_doc_by_id(docID)["document_name"]
+                    remove_document(docID) #remove the document
+                    message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
+                    add_alert_by_id(doc['author_id'], message) #alert the author
+                    flash(f"Document \"{docName}\" marked as rejected and removed from server.")
+                    return redirect(url_for('index')) #go back to home page
+                flash("You do not have permission to do that.")
+                return redirect(link)
             case "remove":
                 if isAuthor or check_state(g.stateint, 2): #if user is author or doc approver
                     docName = get_doc_by_id(docID)["document_name"]
@@ -116,6 +124,8 @@ def viewDocument():
                     add_alert_by_id(doc["author_id"], message) #alert the author
                     flash(f"Document \"{docName}\" successfully removed.")
                     return redirect(url_for('index')) #go back to home page
+                flash("You do not have permission to do that.")
+                return redirect(link)
             case _:
                 return redirect(link)
 

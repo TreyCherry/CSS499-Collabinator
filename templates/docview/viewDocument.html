@@ -27,7 +27,7 @@
     {% endif %}
     <div class="relative-container">
         <div class="right-box">
-            <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove', 'Are you sure you want to permanently delete this document?')"></i>
+            <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove')"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
@@ -41,10 +41,10 @@
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action, confirmMessage="") {
+        function setAction(action) {
             actionInput = document.getElementById("docAction");
             actionInput.value = action;
-            if (confirmMessage.length == 0 || confirm(confirmMessage)) {
+            if (confirm('Are you sure you want to ' + action + ' this document?')) {
                 actionInput.form.submit();
             }
         }
