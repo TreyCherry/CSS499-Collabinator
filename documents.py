@@ -91,7 +91,7 @@ def viewDocument():
         link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
         match action: #if the action is approve
             case "approve":
-                if not check_state(g.stateint, 2): #if user is not author and not reviewer
+                if docstate != 2 or not check_state(g.stateint, 2): #if user is not author and not reviewer
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
@@ -106,8 +106,9 @@ def viewDocument():
                     add_alert_by_id(doc["author_id"], message, link) #add an alert to the author of the document
 
                 flash("Document approved!")
+                return redirect(url_for('index'))
             case "reject":
-                if not check_state(g.stateint, 2): #if user is approver
+                if docstate != 2 or not check_state(g.stateint, 2): #if user is approver
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 docName = get_doc_by_id(docID)["document_name"]
@@ -117,7 +118,7 @@ def viewDocument():
                 flash(f"Document \"{docName}\" marked as rejected and removed from server.")
                 return redirect(url_for('index')) #go back to home page
             case "remove":
-                if doc['state_id'] == 2 or not isAuthor and not check_state(g.stateint, 2): #if user is author or doc approver
+                if docstate == 2 or not isAuthor and not check_state(g.stateint, 2): #if user is author or doc approver
                     flash("You do not have permission to do that.")
                     return redirect(link)
                     
@@ -127,6 +128,8 @@ def viewDocument():
                 add_alert_by_id(doc["author_id"], message) #alert the author
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
+            case "update":
+                pass
             case _:
                 return redirect(link)
 

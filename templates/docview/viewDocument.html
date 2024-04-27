@@ -27,8 +27,11 @@
     {% endif %}
     <div class="relative-container">
         <div class="right-box">
-            {% if docstate != 2 %}
+            {% if docstate != 2 and check_state(g.stateint, 2) %}
             <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove')"></i>
+            {% endif %}
+            {% if docstate != 2 and check_state(g.stateint, 7) %}
+            <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
             {% endif %}
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
