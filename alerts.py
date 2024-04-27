@@ -15,7 +15,7 @@ bp = Blueprint('alerts', __name__)  # Setup Blueprint
 def alerts():
     user_id = g.user['user_id'] # Get user ID 
     alerts = get_alerts_by_id(user_id)  # Fetch alerts from DB
-    return render_template('alerts.html', alerts=alerts)
+    return render_template('alerts.html', activeNav="alerts", alerts=alerts)
 
 
 def make_alert_message(message_type, **kwargs): #specify message type and pass args that are related to that message
