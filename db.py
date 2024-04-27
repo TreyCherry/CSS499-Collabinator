@@ -160,11 +160,13 @@ def date_format(date): #take a formatted date integer and return a readable stri
     components.reverse() #reverse the list so that it is in the correct order
     return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
 
-
-def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
+def date_delta(date):
     oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100)
     now = datetime.datetime.now() #get current time for comparison
-    relativeTime = now - oldDate #get time difference
+    return now - oldDate #return time difference
+
+def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
+    relativeTime = date_delta(date)
     
     if relativeTime.days > 7:
         datepart = relativeTime.days // 7

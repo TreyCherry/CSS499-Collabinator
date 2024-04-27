@@ -8,7 +8,7 @@ from werkzeug.exceptions import abort
 
 from .db import (
     check_state, get_role, add_user, get_user_by_email, 
-    update_activity, get_user_by_id, new_date, get_db
+    update_activity, get_user_by_id, new_date, get_db, date_delta
 )
 
 bp = Blueprint('auth', __name__, url_prefix='/auth') #auth is the name of the blueprint
@@ -80,7 +80,10 @@ def load_logged_in_user(): #set the global user variable if a user is logged in
 def check_activity(): 
     if g.user is not None: #if user is logged in
         lastactive = get_user_by_id(g.user["user_id"])['last_active'] #get last active time from db
-        if lastactive is not None and new_date() - lastactive < 1000: #if last active time is less than 10 minutes
+        
+        timeSince = date_delta(lastactive)
+        
+        if lastactive is not None and timeSince.seconds < 600 : #if last active time is less than 10 minutes
             update_activity(g.user["user_id"]) #update last active time in db to now
             return 
         
