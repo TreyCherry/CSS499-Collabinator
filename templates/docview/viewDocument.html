@@ -39,7 +39,7 @@
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                                <button onclick="setAction('markreview', this.form, false)">Submit</button>
+                                <button class="fix-size-button" onclick="setAction('markreview', this.form, false)">Submit</button>
                             </form>
                         {% endif %}
                     {% endif %}
@@ -68,8 +68,22 @@
             {% if docstate != 2 and check_state(g.stateint, 7) %}
             <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
             {% endif %}
+            <i class="click-icon fa-regular fa-comment big"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
+    </div>
+    <div class="bottom-box">
+        <i class="min-icon fa-solid fa-xmark big corner"></i>
+        <h2>Comments</h2>
+        <div class="comment-section">
+            <div class="comment-box">
+
+            </div>
+            <div class="comment-container">
+                <textarea class="comment-input"></textarea>
+                <button>Comment</button>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
