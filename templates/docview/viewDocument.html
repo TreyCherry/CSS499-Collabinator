@@ -1,30 +1,65 @@
 {% extends "base.html" %}
-{% macro topBox(header, bodytype) %}
-    <div class="top-box">
-        {% if bodytype==0 %}
-        <span id="unhide" class="hidden">Document Awaiting Approval</span>
+{% macro topBox(bodytype) %}
+    {% if check_state(g.stateint, bodytype) %}
+        {% if bodytype == 2 %}
+            {% set header = "Document Awaiting Approval" %}
+        {% elif bodytype == 3 %}
+            {% set header = "Select Reviewers for Document" %}
         {% endif %}
-        <div id="hide-box">
-            <h2>{{ header }}</h2>
-            {% if bodytype==0 %}
-            <span>Mark the document as approved for review?</span>
-            <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
-            <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
-            {% endif %}
-        </div>
-        <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
-    </div>
+        {% if header %}
+            <div class="top-box">
+                <span id="unhide" class="hidden">{{ header }}</span>
+                <div id="hide-box">
+                    <h2>{{ header }}</h2>
+                    {% if bodytype==2 %}
+                        <span>Mark the document as approved for review?</span>
+                        <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
+                        <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
+                    {% elif bodytype==3 %}
+                        {% if reviewers %}
+                            <form method="post" class="main-content wider">
+                                <table class="main-content">
+                                    <thead>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Add to Review?</th>
+                                    </thead>
+                                    <tbody>
+                                        {% for reviewer in reviewers %}
+                                            <tr>
+                                                <td>{{ reviewer['first_name'] }} {{ reviewer['last_name'] }}</td>
+                                                <td>{{ roles[reviewer['role_id'] | string] }}</td>
+                                                <td>
+                                                    <div class="checkbox">
+                                                        <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
+                                                        <span class="checkmark" onclick="toggleCheck(this)"></span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                <button onclick="setAction('markreview', this.form, false)">Submit</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
+            </div>
+        {% endif %}
+    {% endif %}
 {% endmacro %}
 
 {% block title %}View Document{% endblock %}
 
-{% block content %}
+{% block header %}
+    {{ topBox(docstate) }}
     <form method="post">
         <input type="hidden" id="docAction" name="action" value="none">
     </form>
-    {% if docstate == 2 and check_state(g.stateint, 2)%}
-        {{ topBox("Document Awaiting Approval", 0) }}
-    {% endif %}
+{% endblock %}
+
+{% block content %}
     <div class="relative-container">
         <div class="right-box">
             {% if docstate != 2 and check_state(g.stateint, 2) %}
@@ -46,10 +81,15 @@
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action) {
+        function setAction(action, otherform=null, doConfirm=true) {
             actionInput = document.getElementById("docAction");
+            form = actionInput.form;
             actionInput.value = action;
-            if (confirm('Are you sure you want to ' + action + ' this document?')) {
+            if (otherform != null) {
+                form = otherform;
+                form.appendChild(actionInput);
+            }
+            if (doConfirm && confirm('Are you sure you want to ' + action + ' this document?')) {
                 actionInput.form.submit();
             }
         }

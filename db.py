@@ -11,7 +11,6 @@ import os
 
 from dataclasses import dataclass
 import datetime
-from math import floor, log10
 
 # this file is for handling all database operations
 
@@ -128,6 +127,11 @@ def set_doc_state(doc_id, state_id): #set the state of a document
     db = get_db()
     query = 'UPDATE Documents SET state_id = ? WHERE document_id = ?'
     db.execute(query, (state_id, doc_id))
+    db.commit()
+
+def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
+    db = get_db()
+    db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
     db.commit()
 
 def get_states(stateint): #get a list of allowed states based on stateint
@@ -306,14 +310,17 @@ def get_roles(type = None, invert = False): #get roles, optionally filter by typ
     db = get_db()
     return db.execute(query).fetchall() #get all values that match
 
-def get_roles_by_state(state): #get roles by allowed states
+def get_roles_by_states(*states): #get roles by allowed states
     allRoles = get_roles() #get all roles
     if allRoles is None:
         return None
     validRoles = [] #initially empty
-    for role in allRoles: #for each role
-        if check_state(role["allowed_states"], state): #if role is allowed
-            validRoles.append(role) #add role to list
+    for state in states:
+        for role in allRoles: #for each role
+            if role in validRoles: #do not double add roles
+                continue
+            if check_state(role["allowed_states"], state): #if role is allowed
+                validRoles.append(role) #add role to list
     return validRoles #return list
 
 def update_activity(user_id): #reset last active time to current time

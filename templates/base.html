@@ -35,9 +35,7 @@
             </ul>
         </nav>
         <section class="content">
-            <header>
-                {% block header %}{% endblock %}
-            </header>
+            {% block header %}{% endblock %}
             <div id="flashes">
             {% for message in get_flashed_messages() %} {# flash messages #}
                 <div class="flash">{{ message }}</div>

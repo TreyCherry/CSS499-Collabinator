@@ -42,7 +42,7 @@ body {
 	font-size: 1.2rem;
 }
 
-.display-box button {
+button {
 	width: 100%;
 	padding: 0.75rem;
 	background-color: var(--vdark-purple);
@@ -61,12 +61,12 @@ body {
 	width: 90%;
 }
 
-.display-box button:hover:enabled {
+button:hover:enabled {
 	background-color: var(--darker-purple);
 	color: var(--dark-green);
 }
 
-.display-box button:disabled {
+button:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
@@ -308,11 +308,9 @@ div.savewrapper {
 }
 
 #flashes {
-	top: 5rem;
-	left: 50%;
-	transform: translateX(-50%);
+	margin: auto;
+	margin-top: 5rem;
 	text-align: center;
-	position: absolute;
 }
 
 .star {
@@ -510,6 +508,14 @@ td.date {
 
 .wider {
 	width: 40rem;
+}
+
+form.wider {
+	margin: auto;
+}
+form.wider button {
+	margin-top: 5rem;
+	width: 10rem;
 }
 
 hr {
