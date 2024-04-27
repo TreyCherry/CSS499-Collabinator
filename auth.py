@@ -76,14 +76,16 @@ def load_logged_in_user(): #set the global user variable if a user is logged in
         g.user = get_user_by_id(user_id) #if user is logged in store the user info in the global user var
         g.stateint = get_role(g.user["role_id"])["allowed_states"] #store their allowed states in global stateint
 
-@bp.before_app_request #load before each app request
+    check_activity()
+
 def check_activity(): 
     if g.user is not None: #if user is logged in
         lastactive = get_user_by_id(g.user["user_id"])['last_active'] #get last active time from db
-        
+        if lastactive is None:
+            return
         timeSince = date_delta(lastactive)
         
-        if lastactive is not None and timeSince.seconds < 600 : #if last active time is less than 10 minutes
+        if timeSince.seconds < 600 : #if last active time is less than 10 minutes
             update_activity(g.user["user_id"]) #update last active time in db to now
             return 
         

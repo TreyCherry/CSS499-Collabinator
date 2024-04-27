@@ -119,7 +119,6 @@ button:disabled {
 .comment-section {
 	width: 50rem;
 	margin: auto;
-	height: 30rem;
 }
 
 .comment-box {
@@ -145,7 +144,7 @@ button:disabled {
 	filter: brightness(1.3);
 	font-size: 1.1rem;
 	overflow-wrap: normal;
-	height: 2rem;
+	height: auto;
 }
 
 .comment-container {
@@ -156,6 +155,8 @@ button:disabled {
 .comment-container button {
 	flex: 1;
 	margin: 0;
+	height: 3rem;
+	margin-top: auto;
 }
 
 .click-icon:hover:not(.disabled) {
@@ -431,8 +432,7 @@ div.savewrapper {
 	text-align: center;
 	border: var(--darker-purple) 1px solid;
 	border-radius: 5px 5px 0 0;
-	z-index: 5;
-	height: 40rem;
+	padding-bottom: 3rem;
 }
 
 .bottom-box h2 {

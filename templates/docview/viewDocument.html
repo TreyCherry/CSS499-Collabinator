@@ -89,6 +89,13 @@
 
 <script>
     {% block scripts %}
+        window.addEventListener("keydown", (event) => {
+            if (event.target.classList.contains("comment-input")) {
+                event.target.style.height = "auto";
+                event.target.style.height = event.target.scrollHeight + "px";
+            }
+        });
+
         function hideBox(node) {
             document.getElementById("hide-box").classList.toggle("hidden");
             document.getElementById("unhide").classList.toggle("hidden");
