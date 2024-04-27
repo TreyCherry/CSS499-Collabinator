@@ -80,7 +80,7 @@ body {
 }
 
 .big {
-	font-size: 1.5rem;
+	font-size: 1.5rem !important;
 	margin: 0 1rem;
 }
 .big::before {
@@ -392,7 +392,7 @@ div.savewrapper {
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
-	top: 50%;
+	top: 45%;
 	font-weight: bold;
 }
 
@@ -470,22 +470,26 @@ div.savewrapper {
 }
 
 .alerts {
-	list-style: none;
-	padding: 0;
-	height: 40vh;
+	table-layout: auto;
 }
 
-.alerts li {
-	display: block;
-	font-size: 1.2rem;
-	border: var(--darker-purple) 1px solid;
+td.date {
+	text-wrap: nowrap;
+}
+
+.alerts tr {
+	background-color: var(--dark-purple);
 	padding: 1rem;
 	padding-left: 1.5rem;
 	text-align: left;
 }
 
+.alerts tr:not(.disabled):hover {
+	background-color: var(--vdark-purple);
+}
+
 .wider {
-	width: 30rem;
+	width: 40rem;
 }
 
 hr {

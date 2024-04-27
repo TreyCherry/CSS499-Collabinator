@@ -117,6 +117,12 @@ def update_document(name, type, author_id): #update document will add a new docu
     db.execute(query, values) #execute query
     db.commit() #commit the update to the database
 
+def set_doc_state(doc_id, state_id): #set the state of a document
+    db = get_db()
+    query = 'UPDATE Documents SET state_id = ? WHERE document_id = ?'
+    db.execute(query, (state_id, doc_id))
+    db.commit()
+
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []
     i=0
@@ -156,18 +162,30 @@ def date_format(date): #take a formatted date integer and return a readable stri
 
 
 def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    now = new_date() #get current time for comparison
-    relativeTime = now - date #get time difference
-    try: #if relative time is 0 or less it will return domain error
-        i = floor(log10(relativeTime)/2)
-    except: #assume time change is 0
+    oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100)
+    now = datetime.datetime.now() #get current time for comparison
+    relativeTime = now - oldDate #get time difference
+    
+    if relativeTime.days > 7:
+        datepart = relativeTime.days // 7
+        i = 4
+    elif relativeTime.days > 0:
+        datepart = relativeTime.days
+        i = 3
+    elif relativeTime.seconds > 3600:
+        datepart = relativeTime.seconds // 3600
+        i = 2
+    elif relativeTime.seconds > 60:
+        datepart = relativeTime.seconds // 60
+        i = 1
+    else:
+        datepart = relativeTime.seconds
         i = 0
-    i = i>5 and 5 or i #max index is 5, or where the year is
-    datepart = relativeTime // 100**(i) #shorten down the time difference to only apply to the significant difference
+
     if i==0 and datepart < 10: #if time difference is less than 10 seconds
         return "Just Now" #say "just now"
     
-    timeUnits = ["Second", "Minute", "Hour", "Day", "Month", "Year"] #list of time units 
+    timeUnits = ["Second", "Minute", "Hour", "Day", "Week"] #list of time units 
 
     return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
 
@@ -233,9 +251,12 @@ def get_user_by_email(email: str): #search database for user by email
     db = get_db()
     return db.execute('SELECT * FROM Users WHERE email = ?', (email.lower(),)).fetchone() #get one user
 
-def get_users(): #get all users in database
+def get_users(role=None): #get all users in database
     db = get_db()
-    return db.execute('SELECT * FROM Users').fetchall()
+    query = 'SELECT * FROM Users' #initial query
+    if role is not None:
+        query += ' WHERE role_id = ' + str(role) #add where clause
+    return db.execute(query).fetchall()
 
 def add_user(email: str, password, role_id, first_name: str, last_name: str, date_registered): #add a user to database
     salt = gen_salt(16) #generate random salt for password
@@ -275,6 +296,16 @@ def get_roles(type = None, invert = False): #get roles, optionally filter by typ
     query +=  ' ORDER BY role_type, role_name' #order by type first then name
     db = get_db()
     return db.execute(query).fetchall() #get all values that match
+
+def get_roles_by_state(state): #get roles by allowed states
+    allRoles = get_roles() #get all roles
+    if allRoles is None:
+        return None
+    validRoles = [] #initially empty
+    for role in allRoles: #for each role
+        if check_state(role["allowed_states"], state): #if role is allowed
+            validRoles.append(role) #add role to list
+    return validRoles #return list
 
 def update_activity(user_id): #reset last active time to current time
     if user_id is not None: #if user id is not none
@@ -353,10 +384,10 @@ def remove_role(id): #remove role by id
 def get_alerts_by_id(id):
     db = get_db()
     return db.execute(
-        'SELECT * FROM Alerts WHERE user_id = ?', (id,)
+        'SELECT * FROM Alerts WHERE user_id = ? ORDER BY date_created DESC', (id,)
     ).fetchall()
 
-def add_alert(for_user, message, link=None):
+def add_alert_by_id(for_user, message, link=None):
     columns = "user_id, message, date_created"
     qmarks = "?, ?, ?"
     values = [for_user, message, new_date()]
@@ -370,6 +401,11 @@ def add_alert(for_user, message, link=None):
         tuple(values)
     )
     db.commit()
+
+def add_alert_by_role(role_id, message, link=None):
+    users = get_users(role_id)
+    for user in users:
+        add_alert_by_id(user["user_id"], message, link)
 
 def convert_to_pdf(input_file):
     file_extension = os.path.splitext(input_file)[1].lower()
