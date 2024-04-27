@@ -430,7 +430,7 @@ div.savewrapper {
 	margin: auto;
 	text-align: center;
 	border: var(--darker-purple) 1px solid;
-	border-radius: 5px;
+	border-radius: 5px 5px 0 0;
 	z-index: 5;
 	height: 40rem;
 }
