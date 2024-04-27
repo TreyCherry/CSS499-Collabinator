@@ -95,6 +95,7 @@ button:disabled {
 	position: absolute;
 	right: 1.2rem;
 	bottom: 1.2rem;
+	z-index: 3;
 }
 
 .right-box {
@@ -426,13 +427,34 @@ div.savewrapper {
 .bottom-box {
 	width: 70%;
 	position: relative;
-	border-bottom: none;
+	border-bottom: none !important;
 	background-color: var(--light-purple);
 	margin: auto;
 	text-align: center;
 	border: var(--darker-purple) 1px solid;
 	border-radius: 5px 5px 0 0;
 	padding-bottom: 3rem;
+	overflow-y: hidden;
+}
+
+.comments-disabled {
+	opacity: 0.8;
+	background-color: black;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	position: absolute;
+	padding-top: 9rem;
+}
+
+.comments-disabled .main-content {
+	background-color: var(--vdark-purple);
+}
+
+.comments-disabled h2 {
+	height: 50%;
 }
 
 .bottom-box h2 {

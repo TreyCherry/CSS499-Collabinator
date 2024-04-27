@@ -74,13 +74,19 @@
     </div>
     <div class="bottom-box">
         <i class="min-icon fa-solid fa-xmark big corner"></i>
+        {% if docstate <= 3 %}
+            <div class="comments-disabled">
+                <div class="display-box main-content">
+                    <h2>Comments Currently Disabled</h2>
+                </div>
+            </div>
+        {% endif %}
         <h2>Comments</h2>
         <div class="comment-section">
             <div class="comment-box">
-
             </div>
             <div class="comment-container">
-                <textarea class="comment-input"></textarea>
+                <textarea class="comment-input" placeholder="Add a comment"></textarea>
                 <button>Comment</button>
             </div>
         </div>
