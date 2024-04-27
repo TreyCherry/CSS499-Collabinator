@@ -7,7 +7,7 @@ from werkzeug.exceptions import abort
 from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
-    get_roles_by_state, remove_document
+    get_roles_by_states, remove_document, get_users
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -83,9 +83,24 @@ def viewDocument():
     isAuthor = doc["author_id"] == g.user["user_id"]
     filename = get_filename(doc) #get the full filename of the document
     
-    if docstate == 2 and not check_state(g.stateint, 2) and not isAuthor: #check if document is in review stage
-        return redirect(url_for('index')) #if user does not have mark for review role then redirect 
-    
+    if not isAuthor:
+        if not check_state(g.stateint, 2): #check if document is in review stage
+            if docstate <= 3 and not check_state(g.stateint, 3): #check if document is in review stage
+                return redirect(url_for('index')) #if user does not have mark for review role then redirect 
+        
+    reviewers = None
+    roleNames = None
+    if docstate == 3:
+        reviewRoles = get_roles_by_states(*range(4,10)) #roles with permissions 4-9
+        reviewers = set()
+        roleNames = {}
+        for reviewRole in reviewRoles:
+            roleId = reviewRole["role_id"]
+            roleNames[str(roleId)] = reviewRole["role_name"]
+            users = get_users(roleId)
+            for user in users:
+                reviewers.add(user)
+
     if request.method == 'POST': #if the form is submitted
         action = request.form.get("action") #get the action from the form
         link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
@@ -96,7 +111,7 @@ def viewDocument():
                     return redirect(link)
                 set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
                 message = make_alert_message("doc_approved", document_name=doc["document_name"]) #create an alert message
-                roles = get_roles_by_state(3) #get the roles that have select reviewer permissions
+                roles = get_roles_by_states(3) #get the roles that have select reviewer permissions
                 authorDone = False #initialize to false
                 for role in roles: #alert each role
                     add_alert_by_role(role["role_id"], message, link)
@@ -130,8 +145,11 @@ def viewDocument():
                 return redirect(url_for('index')) #go back to home page
             case "update":
                 pass
+            case "markreview":
+                flash("Marked for review.")
+                return redirect(link)
             case _:
                 return redirect(link)
 
-    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate) #render the html page with the filename passed to it
+    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames) #render the html page with the filename passed to it
     
