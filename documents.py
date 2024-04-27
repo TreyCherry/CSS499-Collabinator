@@ -91,7 +91,7 @@ def viewDocument():
         link=url_for("docs.viewDocument")+"?docID="+docID #link to view the document
         match action: #if the action is approve
             case "approve":
-                if not isAuthor and not check_state(g.stateint, 2): #if user is not author and not reviewer
+                if not check_state(g.stateint, 2): #if user is not author and not reviewer
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
@@ -107,25 +107,26 @@ def viewDocument():
 
                 flash("Document approved!")
             case "reject":
-                if check_state(g.stateint, 2): #if user is approver
-                    docName = get_doc_by_id(docID)["document_name"]
-                    remove_document(docID) #remove the document
-                    message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
-                    add_alert_by_id(doc['author_id'], message) #alert the author
-                    flash(f"Document \"{docName}\" marked as rejected and removed from server.")
-                    return redirect(url_for('index')) #go back to home page
-                flash("You do not have permission to do that.")
-                return redirect(link)
+                if not check_state(g.stateint, 2): #if user is approver
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                docName = get_doc_by_id(docID)["document_name"]
+                remove_document(docID) #remove the document
+                message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
+                add_alert_by_id(doc['author_id'], message) #alert the author
+                flash(f"Document \"{docName}\" marked as rejected and removed from server.")
+                return redirect(url_for('index')) #go back to home page
             case "remove":
-                if isAuthor or check_state(g.stateint, 2): #if user is author or doc approver
-                    docName = get_doc_by_id(docID)["document_name"]
-                    remove_document(docID) #remove the document
-                    message = make_alert_message("doc_removed", document_name=docName) #create an alert message
-                    add_alert_by_id(doc["author_id"], message) #alert the author
-                    flash(f"Document \"{docName}\" successfully removed.")
-                    return redirect(url_for('index')) #go back to home page
-                flash("You do not have permission to do that.")
-                return redirect(link)
+                if doc['state_id'] == 2 or not isAuthor and not check_state(g.stateint, 2): #if user is author or doc approver
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                    
+                docName = get_doc_by_id(docID)["document_name"]
+                remove_document(docID) #remove the document
+                message = make_alert_message("doc_removed", document_name=docName) #create an alert message
+                add_alert_by_id(doc["author_id"], message) #alert the author
+                flash(f"Document \"{docName}\" successfully removed.")
+                return redirect(url_for('index')) #go back to home page
             case _:
                 return redirect(link)
 

@@ -27,7 +27,9 @@
     {% endif %}
     <div class="relative-container">
         <div class="right-box">
+            {% if docstate != 2 %}
             <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove')"></i>
+            {% endif %}
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
