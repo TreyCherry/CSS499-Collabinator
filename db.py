@@ -428,39 +428,3 @@ def convert_to_pdf(input_file):
         raise ValueError("Unsupported file type.")
 
     return abs_output_file
-'''
-def update_document_stage(document_id, new_stage):
-    # Update stage if changed
-    current_stage = get_document_stage(document_id)
-    if current_stage != new_stage:
-        query = "UPDATE Document SET document_stage=? WHERE document_id=?"
-        execute_query(query, (new_stage, document_id))
-        connection.commit()
-        generate_alert(document_id, new_stage)  # Notify change
-
-def generate_alert(document_id, new_stage):
-    # Create change notification
-    alert_message = f"Document {document_id} stage changed to {STATES[new_stage].name}"
-    recipient_id = get_document_assigned_employee(document_id)
-    add_alert(recipient_id, alert_message)  # Add alert to DB
-
-def get_document_stage(document_id):
-    # Fetch document stage
-    query = "SELECT document_stage FROM Document WHERE document_id=?"
-    result = execute_query(query, (document_id,))
-    return result.fetchone()[0]
-
-def get_document_assigned_employee(document_id):
-    # Get document's assigned employee
-    query = "SELECT assigned_employee FROM Document WHERE document_id=?"
-    result = execute_query(query, (document_id,))
-    return result.fetchone()[0]
-
-def add_alert(user_id, description, link):
-    #Inserts an alert into the database.
-    db = get_db()  # Get database connection from Flask g context
-    date_created = int(datetime.datetime.now().timestamp())  # UNIX timestamp for creation date
-    query = "INSERT INTO Alerts (user_id, link, date_created, description) VALUES (?, ?, ?, ?)"
-    db.execute(query, (user_id, link, date_created, description))
-    db.commit()  # Commit the transaction
-'''
