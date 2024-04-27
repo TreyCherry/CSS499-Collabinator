@@ -68,12 +68,12 @@
             {% if docstate != 2 and check_state(g.stateint, 7) %}
             <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
             {% endif %}
-            <i class="click-icon fa-regular fa-comment big"></i>
+            <i class="click-icon fa-regular fa-comment big" onclick="toggleComments()"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
-    <div class="bottom-box">
-        <i class="min-icon fa-solid fa-xmark big corner"></i>
+    <div id="comments" class="bottom-box hidden">
+        <i class="min-icon fa-solid fa-xmark big corner" onclick="toggleComments()"></i>
         {% if docstate <= 3 %}
             <div class="comments-disabled">
                 <div class="display-box main-content">
@@ -95,30 +95,42 @@
 
 <script>
     {% block scripts %}
-        window.addEventListener("keydown", (event) => {
+        window.addEventListener("keydown", (event) => { //resize the comment input when new lines added
             if (event.target.classList.contains("comment-input")) {
                 event.target.style.height = "auto";
                 event.target.style.height = event.target.scrollHeight + "px";
             }
         });
 
-        function hideBox(node) {
+        function hideBox(node) { //hide the top box
             document.getElementById("hide-box").classList.toggle("hidden");
             document.getElementById("unhide").classList.toggle("hidden");
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action, otherform=null, doConfirm=true) {
-            actionInput = document.getElementById("docAction");
-            form = actionInput.form;
-            actionInput.value = action;
-            if (otherform != null) {
-                form = otherform;
-                form.appendChild(actionInput);
+        function setAction(action, otherform=null, doConfirm=true) { //{# set the action to be completed on submission #}
+            actionInput = document.getElementById("docAction"); //{# hidden action input #}
+            form = actionInput.form; //{# get the attached form #}
+            actionInput.value = action; //{# set the action value based on function call action #}
+            if (otherform != null) { //{# if another form is specified to submit #}
+                form = otherform; // {# set the form to the other form #}
+                form.appendChild(actionInput); //{# add the hidden input to that form #}
             }
-            if (doConfirm && confirm('Are you sure you want to ' + action + ' this document?')) {
+            if (!doConfirm || confirm('Are you sure you want to ' + action + ' this document?')) { //confirm if needed
                 actionInput.form.submit();
             }
+        }
+
+        async function toggleComments() { // toggle the comments box, async in order to use await
+            commentBox = document.getElementById("comments"); // get the comments box
+            if (!commentBox.classList.contains("hidden")) { //check if hidden already
+                window.scrollTo({top: 0, behavior: "smooth"}); //if not, scroll to top of page
+                await new Promise(resolve => setTimeout(resolve, 500)); //wait .5 seconds so animation can finish
+            }
+            commentBox.classList.toggle("hidden"); //either hide or reveal comment box
+            if (!commentBox.classList.contains("hidden")) { //if not hidden now
+                commentBox.scrollIntoView({behavior: "smooth"}); //scroll to comments box
+            } 
         }
     {% endblock %}
 </script>
