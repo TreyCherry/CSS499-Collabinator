@@ -7,7 +7,7 @@ from werkzeug.exceptions import abort
 from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
-    get_roles_by_states, remove_document, get_users
+    get_roles_by_states, remove_document, get_users, add_doc_reviewer
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -126,7 +126,7 @@ def viewDocument():
                 if docstate != 2 or not check_state(g.stateint, 2): #if user is approver
                     flash("You do not have permission to do that.")
                     return redirect(link)
-                docName = get_doc_by_id(docID)["document_name"]
+                docName = doc["document_name"]
                 remove_document(docID) #remove the document
                 message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
                 add_alert_by_id(doc['author_id'], message) #alert the author
@@ -137,7 +137,7 @@ def viewDocument():
                     flash("You do not have permission to do that.")
                     return redirect(link)
                     
-                docName = get_doc_by_id(docID)["document_name"]
+                docName = doc["document_name"]
                 remove_document(docID) #remove the document
                 message = make_alert_message("doc_removed", document_name=docName) #create an alert message
                 add_alert_by_id(doc["author_id"], message) #alert the author
@@ -146,8 +146,17 @@ def viewDocument():
             case "update":
                 pass
             case "markreview":
-                flash("Marked for review.")
-                return redirect(link)
+                if docstate != 3 or not check_state(g.stateint, 3): #if user is not reviewer
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
+                message = make_alert_message("doc_user_added", document_name=doc["document_name"]) #create an alert message
+                for userID in userIDs: #for each user id
+                    add_doc_reviewer(docID, userID) #add the user to the document reviewers
+                    add_alert_by_id(userID, message, link) #alert the user they have been added
+                set_doc_state(docID, 4) #set the state of the document to comment ready
+                flash("Document review started!")
+                return redirect(url_for('index'))
             case _:
                 return redirect(link)
 

@@ -129,6 +129,11 @@ def set_doc_state(doc_id, state_id): #set the state of a document
     db.execute(query, (state_id, doc_id))
     db.commit()
 
+def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
+    db = get_db()
+    db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
+    db.commit()
+
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []
     i=0

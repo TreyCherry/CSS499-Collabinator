@@ -31,7 +31,7 @@
                                                 <td>{{ roles[reviewer['role_id'] | string] }}</td>
                                                 <td>
                                                     <div class="checkbox">
-                                                        <input type="checkbox">
+                                                        <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
                                                         <span class="checkmark" onclick="toggleCheck(this)"></span>
                                                     </div>
                                                 </td>

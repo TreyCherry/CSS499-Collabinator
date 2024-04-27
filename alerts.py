@@ -30,5 +30,7 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
             return f"Document Update: Document \"{kwargs['document_name']}\" has been removed."
         case "doc_rejected":
             return f"Document Update: Document \"{kwargs['document_name']}\" has been rejected and removed from the site."
+        case "doc_user_added":
+            return f"Document Update: You have been selected to contribute to document review on \"{kwargs['document_name']}\". View the document now."
         case _:
             return None #if message type doesn't exist, return None
