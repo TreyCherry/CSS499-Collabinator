@@ -34,6 +34,8 @@ def register():
             except get_db().IntegrityError: #if email already exists
                 error = f"User {request.form['email']} is already registered." #set error message
             else: #in try/except blocks else just runs if no exception 
+                flash("Account created successfully. Please log in.")
+                #TODO: alert managers
                 return redirect(url_for("auth.login")) #redirect to login
             
         flash(error) #flash error message
