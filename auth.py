@@ -89,6 +89,7 @@ def check_activity():
             return update_activity(g.user["user_id"]) #update last active time in db to now
         
         session.clear() #otherwise clear session to logout user
+        load_logged_in_user()
         flash("Inactive for more than 10 minutes. Please log in again.") #flash message to login again
         return redirect(url_for('auth.login')) #redirect to login
 

@@ -91,8 +91,8 @@
             <div class="comment-box">
                 {% if comments %}
                     {% for comment in comments %}
-                        <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %} {% if comment['resolved'] == 1 %}resolved{% endif %}">
-                            <span>Posted {{ date_concise(comment["date_created"]) }}{% if comment['resolved'] == 1 %} - <b>Resolved</b>{% endif %}</span>
+                        <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %} {% if comment['resolved'] == 2 %}resolved{% endif %}">
+                            <span>Posted {{ date_concise(comment["date_created"]) }}{% if comment['resolved'] == 2 %} - <b>Resolved</b>{% elif comment['resolved'] == 1 %} - <b>Responses</b> {% endif %}</span>
                             <div class="relative-container">
                                 <i class="min-icon fa-regular fa-comment-dots" onclick="goToCommentReplies({{ comment['comment_id'] }})"></i>
                                 <h3>{{ usernames[comment["author_id"]|string] }}</h3>

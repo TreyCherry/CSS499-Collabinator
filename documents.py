@@ -26,7 +26,8 @@ def index():
         if check_state(g.stateint, 2): #if moderator show all docs
             docList = get_documents()
         else:
-            docList = get_documents(3) #if not only show approved docs
+            docList = get_documents(author_id=g.user["user_id"], min_state_id=3) #if not only show approved docs
+
         if docList is not None:
             for doc in docList:
                 user = get_user_by_id(doc["author_id"]) #get author info from db
@@ -49,10 +50,14 @@ def addDocument():
         file = request.files['file'] #get the file from the request
         docName = upload_file(file, g.user["user_id"]) #upload_file uploads the file to the server and returns true if it succeeds false otherwise
         if docName is not None:
-            message = make_alert_message("doc_upload", document_name=docName) #create an alert messages
+            link = url_for('docs.viewDocument') + "?docID=" + str(get_doc_by_name(docName)["document_id"])
+            message = make_alert_message("your_doc_upload", document_name=docName) #create an alert messages
+            add_alert_by_id(g.user["user_id"], message, link)
+
+            message = make_alert_message("doc_upload", document_name=docName, user_name=g.user["first_name"]) #create an alert messages
             roles = get_roles_by_states(2) #get the roles that have approve permissions
             for role in roles:
-                add_alert_by_role(role["role_id"], message, url_for('docs.viewDocument') + "?docID=" + str(get_doc_by_name(docName)["document_id"]))
+                add_alert_by_role(role["role_id"], message, link)
             flash("Upload successful!")
             return redirect(url_for('index')) #if it uploaded successfully take us back to homepage
         
@@ -97,11 +102,11 @@ def viewResponses():
     if request.method == 'POST':
         resolveButton = request.form.get("resolve")
         if resolveButton is not None:
-            if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 6):
+            if comment['resolved'] == 2 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 6):
                 flash("You are not allowed to do that")
                 return redirect(link)
             
-            mark_resolved(commentID)
+            mark_resolved(commentID, 2)
             comtext = "%.10s" % comment['comment']
             if comtext != comment['comment']:
                 comtext += "..."
@@ -117,7 +122,7 @@ def viewResponses():
 
             return redirect(docLink)
 
-        if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 5):
+        if comment['resolved'] == 2 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 5):
             flash("Unable to add response")
             return redirect(link)
         
@@ -130,6 +135,9 @@ def viewResponses():
         message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=doc["document_name"])
         
         add_alert_by_doc_reviewers(docID, message, link)
+
+        if comment["resolved"] != 1: #if comment not already marked as replied, mark it
+            mark_resolved(commentID, 1)
 
         if docstate != 6: #update doc to stage 6 if it needs it
             set_doc_state(docID, 6)
@@ -164,10 +172,8 @@ def viewDocument():
     isAuthor = doc["author_id"] == g.user["user_id"]
     filename = get_filename(doc) #get the full filename of the document
     
-    if not isAuthor:
-        if not check_state(g.stateint, 2): #check if document is in review stage
-            if docstate <= 3 and not check_state(g.stateint, 3): #check if document is in review stage
-                return redirect(url_for('index')) #if user does not have mark for review role then redirect 
+    if not isAuthor and not check_state(g.stateint, 2) and docstate < 3: #check if document is in review stage
+            return redirect(url_for('index')) #if user does not have mark for review role then redirect 
         
 
     selectedReviewers = get_doc_reviewers(docID)

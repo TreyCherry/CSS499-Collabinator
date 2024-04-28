@@ -94,10 +94,18 @@ def get_doc_by_id(id): #search database for document by id
         'SELECT * FROM Documents WHERE document_id = ?', (id,)
     ).fetchone() #return one result
 
-def get_documents(min_state_id = None): #get all documents in database
+def get_documents(author_id = None, min_state_id = None): #get all documents in database
     query = 'SELECT * FROM Documents' #initial query
+    addon = ""
     if min_state_id is not None:
-        query += ' WHERE state_id > ' + str(min_state_id) #add where clause
+        addon = 'state_id >= ' + str(min_state_id) #add where clause
+    if author_id is not None:
+        if addon != "":
+            addon += " OR "
+        addon += 'author_id = ' + str(author_id) #add clause for user id
+    if addon != "":
+        query += ' WHERE '
+        query += addon
     query += ' ORDER BY last_updated DESC' #order by last updated
     db = get_db()
     return db.execute(query).fetchall() #get all documents that match
@@ -168,11 +176,8 @@ def get_comments(doc_id, resolved=None): #get all comments on document
     return db.execute(query, tuple(values)).fetchall()
 
 def check_new_responses(doc_id): #check if there are any new responses
-    comments = get_comments(doc_id, resolved=0)
-    for comment in comments:
-        if len(get_responses(comment['comment_id'])) > 0:
-            return True
-    return False
+    comments = get_comments(doc_id, resolved=1)
+    return len(comments) > 0
 
 def get_comment(comment_id): #get a single comment by id
     db = get_db()
@@ -188,18 +193,18 @@ def get_responses(comment_id): #get all responses to a comment
     db = get_db()
     return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
 
-def mark_resolved(comment_id): #mark a comment as resolved
+def mark_resolved(comment_id, resolved): #mark a comment as resolved
     db = get_db()
-    db.execute('UPDATE Comments SET resolved = 1 WHERE comment_id = ?', (comment_id,))
+    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
     db.commit()
     
 def check_all_resolved(doc_id): #check if all comments on a document are resolved
     db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved = 0', (doc_id,)).fetchone() is None
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
 
 def resolve_all(doc_id): #resolve all comments on a document
     db = get_db()
-    db.execute('UPDATE Comments SET resolved = 1 WHERE document_id = ?', (doc_id,))
+    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
     db.commit()
 
 def get_states(stateint): #get a list of allowed states based on stateint
