@@ -8,8 +8,9 @@ from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
-    add_comment, get_doc_reviewers, get_comments, get_comment, add_response,
-    get_doc_by_name, get_responses
+    add_comment, get_comments, get_comment, add_response,
+    get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
+    check_all_resolved, check_new_responses
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -84,27 +85,51 @@ def viewResponses():
         return redirect(url_for('index'))
     
     comment = get_comment(commentID)
+    docID = comment['document_id']
+    doc = get_doc_by_id(docID)
+    docstate = doc["state_id"]
     users = get_users()
     link = url_for('docs.viewResponses') + "?commentID=" + commentID
 
     if request.method == 'POST':
-        if comment['resolved'] == 1 or not check_doc_reviewer(comment['document_id'], g.user['user_id']):
+        resolveButton = request.form.get("resolve")
+        if resolveButton is not None:
+            if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 6):
+                flash("You are not allowed to do that")
+                return redirect(link)
+            
+            mark_resolved(commentID)
+            comtext = "%.10s" % comment['comment']
+            if comtext != comment['comment']:
+                comtext += "..."
+            message = make_alert_message("comment_resolved", first_name=get_user_by_id(comment['author_id'])["first_name"], document_name=doc["document_name"], comment_text=comtext)
+            docLink = url_for('docs.viewDocument') + "?docID=" + str(docID)
+            add_alert_by_doc_reviewers(docID, message, docLink)
+            flash("Comment marked as resolved")
+
+            if check_all_resolved(docID): #if all comments resolved
+                set_doc_state(docID, 7) #mark document as all resolved
+            elif not check_new_responses(docID): #if otherwise no responses on other comments
+                set_doc_state(docID, 5) #mark document as comments to view with no responses
+
+            return redirect(docLink)
+
+        if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 5):
             flash("Unable to add response")
             return redirect(link)
         
         response = request.form.get("response")
         if not response or response == "":
+            flash("Response cannot be empty")
             return redirect(link)
         
         add_response(commentID, g.user["user_id"], response)
-        message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=get_doc_by_id(comment["document_id"])["document_name"])
+        message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=doc["document_name"])
         
-        reviewers = get_doc_reviewers(comment["document_id"]) #get all doc reviewers
-        for reviewer in reviewers: #alert them
-            add_alert_by_id(reviewer["reviewer_id"], message, link)
+        add_alert_by_doc_reviewers(docID, message, link)
 
-        if get_doc_by_id(comment["document_id"])["state_id"] == 5: #if doc still in stage 5 update to 6
-            set_doc_state(comment["document_id"], 6)
+        if docstate != 6: #update doc to stage 6 if it needs it
+            set_doc_state(docID, 6)
 
         flash("Response submitted")
         return redirect(link)
@@ -115,7 +140,7 @@ def viewResponses():
     for user in users:
         usernames[str(user["user_id"])] = user["first_name"] + " " + user["last_name"]
 
-    return render_template('docview/responses.html', activeNav="docs", comment=comment, usernames=usernames, responses=responses)
+    return render_template('docview/responses.html', activeNav="docs", comment=comment, usernames=usernames, responses=responses, docstate=docstate)
 
 @bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
@@ -261,9 +286,7 @@ def mark_doc_review(doc, docID, docstate, link):
 
 def upload_comment(doc, docID, docstate, comment, link): #upload a comment
     add_comment(docID, g.user["user_id"], comment) #add comment to database
-    reviewers = get_doc_reviewers(docID)
     message = make_alert_message("new_comment", document_name=doc["document_name"]) #create an alert message
-    for reviewer in reviewers: #alert all reviewers
-        add_alert_by_id(reviewer["reviewer_id"], message, link)
-    if docstate == 4:
+    add_alert_by_doc_reviewers(docID, message, link)
+    if docstate != 5:
         set_doc_state(docID, 5) #set the state of the document to comments added

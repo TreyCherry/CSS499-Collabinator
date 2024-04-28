@@ -14,7 +14,19 @@
 {% block content %}
 <div class="display-box memberlist relative-container">
     <a class="back-button" href="{{ url_for('docs.viewDocument') }}?docID={{ comment['document_id'] }}">Back to Document</a>
-    <h1>{% block title %}Comment Responses{% endblock %}</h1>
+    <div class="corner-div">
+        {% if comment['resolved'] == 1 %}
+                <h3>Resolved</h3>
+        {% else %}
+            {% if check_doc_reviewer(comment['document_id'], g.user['user_id']) and check_state(g.stateint, 6) %}
+                <form method="post">
+                    <input type="hidden" name="resolve" value="1">
+                    <button type="submit">Mark as Resolved</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+    <h1>{% block title %}Responses{% endblock %}</h1>
     <div class="response-container">
         <div class="main-content comment-box replies-box">
             {{ responseBox("comment", comment)}}
@@ -24,7 +36,7 @@
                 {% endfor %}
             {% endif %}
         </div>
-        {% if check_state(g.stateint, 5) %}
+        {% if check_doc_reviewer(comment['document_id'], g.user['user_id']) and check_state(g.stateint, 5) and comment['resolved'] == 0 and docstate < 8 %}
         <form method="post">
                 <div class="comment-container reply-container">
                     <textarea class="comment-input" placeholder="Add a response" name="response"></textarea>

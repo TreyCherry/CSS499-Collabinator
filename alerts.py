@@ -36,5 +36,7 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
             return f"New comment added to document \"{kwargs['document_name']}\". Click to View"
         case "new_response":
             return f"{kwargs['user_name']} responded to a comment on document \"{kwargs['document_name']}\". Click to View"
+        case "comment_resolved":
+            return f"{kwargs['first_name']}'s comment \"{kwargs['comment_text']}\" on document \"{kwargs['document_name']}\" has been resolved."
         case _:
             return None #if message type doesn't exist, return None"

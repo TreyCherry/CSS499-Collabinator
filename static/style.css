@@ -126,6 +126,7 @@ button:disabled {
 .comment-section {
 	width: 50rem;
 	margin: auto;
+	margin-top: 3rem;
 }
 
 .comment-box {
@@ -530,7 +531,7 @@ div.savewrapper {
 }
 
 .bottom-box h2 {
-	margin: 3rem 0;
+	margin-top: 3rem;
 }
 
 .corner {
@@ -546,6 +547,16 @@ div.savewrapper {
 } 
 .from-comment .min-icon {
 	right: 1.2rem;
+}
+
+.resolved {
+	filter: brightness(0.6);
+}
+
+.corner-div {
+	position: absolute;
+	width: 10rem;
+	right: 2rem;
 }
 
 .top-box {
