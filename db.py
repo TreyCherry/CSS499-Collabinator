@@ -150,9 +150,19 @@ def add_comment(doc_id, author_id, comment):
     db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
     db.commit()
 
-def get_comments(doc_id):
+def get_comments(doc_id): #get all comments on document
     db = get_db()
     return db.execute('SELECT * FROM Comments WHERE document_id = ? ORDER BY date_created', (doc_id,)).fetchall()
+
+def get_comment(comment_id): #get a single comment by id
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
+
+def add_response(comment_id, author_id, response):
+    db = get_db()
+    now = new_date()
+    db.execute('INSERT INTO Responses (comment_id, author_id, response, date_created) VALUES (?, ?, ?, ?)', (comment_id, author_id, response, now))
+    db.commit()
 
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []

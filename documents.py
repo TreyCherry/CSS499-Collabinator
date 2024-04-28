@@ -8,7 +8,7 @@ from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
-    add_comment, get_doc_reviewers, get_comments
+    add_comment, get_doc_reviewers, get_comments, get_comment
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -68,15 +68,33 @@ def viewer():
 
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], request.args.get("filename"), mimetype=type) #send the file with the specified mimetype
 
-@bp2.route('/replies')
+@bp2.route('/responses', methods=('GET', 'POST'))
 @login_required
-def replies():
+def responses():
     if not check_state(g.stateint, 0): #if user does not have read permissions
         return redirect(url_for('index')) #take them back to home page
     commentID = request.args.get("commentID")
     if not commentID:
         return redirect(url_for('index'))
-    return render_template('docview/replies.html', activeNav="docs")
+    
+    comment = get_comment(commentID)
+    users = get_users()
+    link = url_for('docs.responses') + "?commentID=" + commentID
+
+    if request.method == 'POST':
+        if comment['resolved'] == 1 or not check_doc_reviewer(comment['document_id'], g.user['user_id']):
+            pass
+
+        response = request.form.get("response")
+        if not response or response == "":
+            return redirect(link)
+        
+
+    usernames = {}
+    for user in users:
+        usernames[str(user["user_id"])] = user["first_name"] + " " + user["last_name"]
+
+    return render_template('docview/responses.html', activeNav="docs", comment=comment, usernames=usernames)
 
 @bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
