@@ -190,6 +190,10 @@ def check_all_resolved(doc_id): #check if all comments on a document are resolve
     db = get_db()
     return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved = 0', (doc_id,)).fetchone() is None
 
+def resolve_all(doc_id): #resolve all comments on a document
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = 1 WHERE document_id = ?', (doc_id,))
+    db.commit()
 
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []

@@ -10,7 +10,7 @@ from .db import (
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
     add_comment, get_comments, get_comment, add_response,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
-    check_all_resolved, check_new_responses
+    check_all_resolved, check_new_responses, resolve_all
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -233,7 +233,7 @@ def viewDocument():
                 flash("Document review started!")
                 return redirect(url_for('index'))
             case "comment":
-                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #if user is not reviewer
+                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -244,10 +244,15 @@ def viewDocument():
                     flash("Comment cannot be empty!")
                     return redirect(link)
                 
-
                 flash("Comment added!")
                 return redirect(link)
             case "close comments on": #writing it this way is easier for the confirm function
+                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate > 8:
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                
+                close_comments(doc, docID, link)
+                
                 flash("Comments closed!")
                 return redirect(link)
             case _:
@@ -293,3 +298,9 @@ def upload_comment(doc, docID, docstate, comment, link): #upload a comment
     add_alert_by_doc_reviewers(docID, message, link)
     if docstate != 5:
         set_doc_state(docID, 5) #set the state of the document to comments added
+
+def close_comments(doc, docID, link):
+    resolve_all(docID)
+    set_doc_state(docID, 8)
+    message = make_alert_message("comments_closed", document_name=doc["document_name"])
+    add_alert_by_doc_reviewers(docID, message, link)
