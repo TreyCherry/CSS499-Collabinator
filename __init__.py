@@ -38,6 +38,7 @@ def create_app(test_config=None):
     app.jinja_env.globals.update(check_state=db.check_state)
     app.jinja_env.globals.update(date_format=db.date_format)
     app.jinja_env.globals.update(date_concise=db.date_concise)
+    app.jinja_env.globals.update(check_doc_reviewer=db.check_doc_reviewer)
 
     from . import auth
     app.register_blueprint(auth.bp) #register auth blueprint

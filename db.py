@@ -142,7 +142,7 @@ def check_doc_reviewer(doc_id, reviewer_id): #check if a reviewer is on the list
 
 def get_doc_reviewers(doc_id): #get all reviewers for a document
     db = get_db()
-    return db.execute('SELECT reviewer_id FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
+    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
 
 def add_comment(doc_id, author_id, comment):
     db = get_db()
@@ -150,9 +150,22 @@ def add_comment(doc_id, author_id, comment):
     db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
     db.commit()
 
-def get_comments(doc_id): #get all comments on document
+def get_comments(doc_id, resolved=None): #get all comments on document
     db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE document_id = ? ORDER BY date_created', (doc_id,)).fetchall()
+    query = 'SELECT * FROM Comments WHERE document_id = ?'
+    values = [doc_id]
+    if resolved is not None:
+        query += ' AND resolved = ?'
+        values.append(resolved)
+    query += ' ORDER BY date_created'
+    return db.execute(query, tuple(values)).fetchall()
+
+def check_new_responses(doc_id): #check if there are any new responses
+    comments = get_comments(doc_id, resolved=0)
+    for comment in comments:
+        if len(get_responses(comment['comment_id'])) > 0:
+            return True
+    return False
 
 def get_comment(comment_id): #get a single comment by id
     db = get_db()
@@ -167,6 +180,16 @@ def add_response(comment_id, author_id, response):
 def get_responses(comment_id): #get all responses to a comment
     db = get_db()
     return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
+
+def mark_resolved(comment_id): #mark a comment as resolved
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = 1 WHERE comment_id = ?', (comment_id,))
+    db.commit()
+    
+def check_all_resolved(doc_id): #check if all comments on a document are resolved
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved = 0', (doc_id,)).fetchone() is None
+
 
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []
@@ -445,6 +468,7 @@ def add_alert_by_id(for_user, message, link=None):
         columns += ", link"
         qmarks += ", ?"
         values.append(link)
+
     db = get_db()
     db.execute(
         'INSERT INTO Alerts (' + columns + ') VALUES (' + qmarks + ')',
@@ -456,6 +480,11 @@ def add_alert_by_role(role_id, message, link=None):
     users = get_users(role_id)
     for user in users:
         add_alert_by_id(user["user_id"], message, link)
+
+def add_alert_by_doc_reviewers(docID, message, link=None):
+    reviewers = get_doc_reviewers(docID)
+    for reviewer in reviewers:
+        add_alert_by_id(reviewer["reviewer_id"], message, link)
 
 def convert_to_pdf(input_file):
     file_extension = os.path.splitext(input_file)[1].lower()
