@@ -1,52 +1,50 @@
 {% extends "base.html" %}
 {% macro topBox(bodytype) %}
-    {% if check_state(g.stateint, bodytype) %}
-        {% if bodytype == 2 %}
-            {% set header = "Document Awaiting Approval" %}
-        {% elif bodytype == 3 %}
-            {% set header = "Select Reviewers for Document" %}
-        {% endif %}
-        {% if header %}
-            <div class="top-box">
-                <span id="unhide" class="hidden">{{ header }}</span>
-                <div id="hide-box">
-                    <h2>{{ header }}</h2>
-                    {% if bodytype==2 %}
-                        <span>Mark the document as approved for review?</span>
-                        <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
-                        <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
-                    {% elif bodytype==3 %}
-                        {% if reviewers %}
-                            <form method="post" class="main-content wider">
-                                <table class="main-content">
-                                    <thead>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Add to Review?</th>
-                                    </thead>
-                                    <tbody>
-                                        {% for reviewer in reviewers %}
-                                            <tr>
-                                                <td>{{ reviewer['first_name'] }} {{ reviewer['last_name'] }}</td>
-                                                <td>{{ roles[reviewer['role_id'] | string] }}</td>
-                                                <td>
-                                                    <div class="checkbox">
-                                                        <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
-                                                        <span class="checkmark" onclick="toggleCheck(this)"></span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                                <button onclick="setAction('markreview', this.form, false)">Submit</button>
-                            </form>
-                        {% endif %}
+    {% if bodytype == 2 and check_state(g.stateint, 2)%}
+        {% set header = "Document Awaiting Approval" %}
+    {% elif check_state(g.stateint, 3) %}
+        {% set header = "Select Reviewers for Document" %}
+    {% endif %}
+    {% if header %}
+        <div class="top-box">
+            <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
+            <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
+                <h2>{{ header }}</h2>
+                {% if bodytype==2 %}
+                    <span>Mark the document as approved for review?</span>
+                    <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
+                    <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
+                {% else %}
+                    {% if reviewers %}
+                        <form method="post" class="main-content wider">
+                            <table class="main-content">
+                                <thead>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Add to Review?</th>
+                                </thead>
+                                <tbody>
+                                    {% for reviewer in reviewers %}
+                                        <tr>
+                                            <td>{{ reviewer['first_name'] }} {{ reviewer['last_name'] }}</td>
+                                            <td>{{ roles[reviewer['role_id'] | string] }}</td>
+                                            <td>
+                                                <div class="checkbox">
+                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
+                                                    <span class="checkmark" onclick="toggleCheck(this)"></span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <button class="fix-size-button" onclick="setAction('markreview', this.form, false)">Submit</button>
+                        </form>
                     {% endif %}
-                </div>
-                <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
+                {% endif %}
             </div>
-        {% endif %}
+            <i class="min-icon fa-solid fa-angle-{% if bodytype > 3 %}down{% else %}up{% endif %} big" onclick="hideBox(this)"></i>
+        </div>
     {% endif %}
 {% endmacro %}
 
@@ -68,30 +66,93 @@
             {% if docstate != 2 and check_state(g.stateint, 7) %}
             <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
             {% endif %}
+            <i class="click-icon fa-regular fa-comment big" onclick="toggleComments()"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
+    </div>
+    <div id="comments" class="bottom-box hidden">
+        <i class="min-icon fa-solid fa-xmark big corner" onclick="toggleComments()"></i>
+        {% if docstate <= 3 %}
+            <div class="comments-disabled">
+                <div class="display-box main-content">
+                    <h2>Comments Currently Disabled</h2>
+                </div>
+            </div>
+        {% endif %}
+        <h2>Comments</h2>
+        <div class="comment-section">
+            <div class="comment-box">
+            {% if comments %}
+                {% for comment in comments %}
+                    <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %}">
+                        <span>Posted {{ date_concise(comment["date_created"]) }}</span>
+                        <div class="relative-container">
+                            <i class="min-icon fa-regular fa-comment-dots" onclick="goToCommentReplies({{ comment['comment_id'] }})"></i>
+                            <h3>{{ usernames[comment["author_id"]|string] }}</h3>
+                            <p>
+                                {{ comment["comment"] }}
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No comments have been made yet.</p>
+            {% endif %}
+            </div>
+            {% if check_state(g.stateint, 4) %}
+            <form method="post">
+                <div class="comment-container">
+                    <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>
+                    <button onclick="setAction('comment', this.form, false)">Comment</button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}
 
 <script>
     {% block scripts %}
-        function hideBox(node) {
+        window.addEventListener("keydown", (event) => { //resize the comment input when new lines added
+            if (event.target.classList.contains("comment-input")) {
+                event.target.style.height = "auto";
+                event.target.style.height = event.target.scrollHeight + "px";
+            }
+        });
+
+        function hideBox(node) { //hide the top box
             document.getElementById("hide-box").classList.toggle("hidden");
             document.getElementById("unhide").classList.toggle("hidden");
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action, otherform=null, doConfirm=true) {
-            actionInput = document.getElementById("docAction");
-            form = actionInput.form;
-            actionInput.value = action;
-            if (otherform != null) {
-                form = otherform;
-                form.appendChild(actionInput);
+        function setAction(action, otherform=null, doConfirm=true) { //{# set the action to be completed on submission #}
+            actionInput = document.getElementById("docAction"); //{# hidden action input #}
+            form = actionInput.form; //{# get the attached form #}
+            actionInput.value = action; //{# set the action value based on function call action #}
+            if (otherform != null) { //{# if another form is specified to submit #}
+                form = otherform; // {# set the form to the other form #}
+                form.appendChild(actionInput); //{# add the hidden input to that form #}
             }
-            if (doConfirm && confirm('Are you sure you want to ' + action + ' this document?')) {
+            if (!doConfirm || confirm('Are you sure you want to ' + action + ' this document?')) { //confirm if needed
                 actionInput.form.submit();
             }
+        }
+
+        async function toggleComments() { // toggle the comments box, async in order to use await
+            commentBox = document.getElementById("comments"); // get the comments box
+            if (!commentBox.classList.contains("hidden")) { //check if hidden already
+                window.scrollTo({top: 0, behavior: "smooth"}); //if not, scroll to top of page
+                await new Promise(resolve => setTimeout(resolve, 500)); //wait .5 seconds so animation can finish
+            }
+            commentBox.classList.toggle("hidden"); //either hide or reveal comment box
+            if (!commentBox.classList.contains("hidden")) { //if not hidden now
+                commentBox.scrollIntoView({behavior: "smooth"}); //scroll to comments box
+            } 
+        }
+
+        function goToCommentReplies(commentId) { //go to replies for comment
+            window.location.href = "{{ url_for('docs.replies') }}?commentID=" + commentId;
         }
     {% endblock %}
 </script>

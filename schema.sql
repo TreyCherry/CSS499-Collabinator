@@ -49,6 +49,7 @@ CREATE TABLE Comments ( --table of comments on documents
     document_id INTEGER NOT NULL, --document the comment is for by id
     author_id INTEGER NOT NULL, --author of the comment by user id
     comment TEXT NOT NULL, --comment text
+    resolved INTEGER NOT NULL, -- 1 = resolved, 0 = not resolved
     date_created INT NOT NULL, --date the comment was created
     FOREIGN KEY (document_id) REFERENCES Documents(document_id),
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
@@ -59,7 +60,6 @@ CREATE TABLE Responses ( --table of responses to comments
     comment_id INTEGER NOT NULL, --comment the response is for by id
     author_id INTEGER NOT NULL, --author of the response by user id
     response TEXT NOT NULL, --response text
-    resolved INTEGER NOT NULL, -- 1 = resolved, 0 = not resolved
     date_created INT NOT NULL, --date the response was created
     FOREIGN KEY (comment_id) REFERENCES Comments(comment_id),
     FOREIGN KEY (author_id) REFERENCES Users(user_id)

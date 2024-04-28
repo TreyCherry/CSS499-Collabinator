@@ -7,7 +7,8 @@ from werkzeug.exceptions import abort
 from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
-    get_roles_by_states, remove_document, get_users, add_doc_reviewer
+    get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
+    add_comment, get_doc_reviewers, get_comments
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -67,6 +68,16 @@ def viewer():
 
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], request.args.get("filename"), mimetype=type) #send the file with the specified mimetype
 
+@bp2.route('/replies')
+@login_required
+def replies():
+    if not check_state(g.stateint, 0): #if user does not have read permissions
+        return redirect(url_for('index')) #take them back to home page
+    commentID = request.args.get("commentID")
+    if not commentID:
+        return redirect(url_for('index'))
+    return render_template('docview/replies.html', activeNav="docs")
+
 @bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
 def viewDocument():
@@ -90,7 +101,7 @@ def viewDocument():
         
     reviewers = None
     roleNames = None
-    if docstate == 3:
+    if docstate >= 3:
         reviewRoles = get_roles_by_states(*range(4,10)) #roles with permissions 4-9
         reviewers = set()
         roleNames = {}
@@ -100,6 +111,15 @@ def viewDocument():
             users = get_users(roleId)
             for user in users:
                 reviewers.add(user)
+    comments = None
+    usernames = None
+    if docstate > 3:
+        comments = get_comments(docID)
+        if comments is not None:
+            usernames = {}
+            for comment in comments:
+                authorUser = get_user_by_id(comment["author_id"])
+                usernames[str(comment["author_id"])] = authorUser["first_name"] + " " + authorUser["last_name"]
 
     if request.method == 'POST': #if the form is submitted
         action = request.form.get("action") #get the action from the form
@@ -109,27 +129,18 @@ def viewDocument():
                 if docstate != 2 or not check_state(g.stateint, 2): #if user is not author and not reviewer
                     flash("You do not have permission to do that.")
                     return redirect(link)
-                set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
-                message = make_alert_message("doc_approved", document_name=doc["document_name"]) #create an alert message
-                roles = get_roles_by_states(3) #get the roles that have select reviewer permissions
-                authorDone = False #initialize to false
-                for role in roles: #alert each role
-                    add_alert_by_role(role["role_id"], message, link)
-                    if docAuthor["role_id"] == role["role_id"]:
-                        authorDone = True #if author role can select viewers they already received alert
-                if not authorDone: #if author hasnt already gotten an alert
-                    add_alert_by_id(doc["author_id"], message, link) #add an alert to the author of the document
-
+                
+                approve_doc(doc, docID, docAuthor, link) #approve the document
+                
                 flash("Document approved!")
                 return redirect(url_for('index'))
             case "reject":
                 if docstate != 2 or not check_state(g.stateint, 2): #if user is approver
                     flash("You do not have permission to do that.")
                     return redirect(link)
-                docName = doc["document_name"]
-                remove_document(docID) #remove the document
-                message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
-                add_alert_by_id(doc['author_id'], message) #alert the author
+                
+                reject_doc(doc, docID) #reject the document
+
                 flash(f"Document \"{docName}\" marked as rejected and removed from server.")
                 return redirect(url_for('index')) #go back to home page
             case "remove":
@@ -138,27 +149,78 @@ def viewDocument():
                     return redirect(link)
                     
                 docName = doc["document_name"]
-                remove_document(docID) #remove the document
-                message = make_alert_message("doc_removed", document_name=docName) #create an alert message
-                add_alert_by_id(doc["author_id"], message) #alert the author
+                remove_doc(doc, docID, docName)
+                
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
             case "update":
                 pass
             case "markreview":
-                if docstate != 3 or not check_state(g.stateint, 3): #if user is not reviewer
+                if docstate < 3 or not check_state(g.stateint, 3): #if user is not reviewer
                     flash("You do not have permission to do that.")
                     return redirect(link)
-                userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
-                message = make_alert_message("doc_user_added", document_name=doc["document_name"]) #create an alert message
-                for userID in userIDs: #for each user id
-                    add_doc_reviewer(docID, userID) #add the user to the document reviewers
-                    add_alert_by_id(userID, message, link) #alert the user they have been added
-                set_doc_state(docID, 4) #set the state of the document to comment ready
+                
+                mark_doc_review(doc, docID, docstate, link) #mark the document for review
+
                 flash("Document review started!")
                 return redirect(url_for('index'))
+            case "comment":
+                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #if user is not reviewer
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                
+                comment = request.form.get("comment")
+                if comment is not None and comment != "":
+                    upload_comment(doc, docID, docstate, comment, link) #upload the comment
+                else:
+                    flash("Comment cannot be empty!")
+                    return redirect(link)
+                
+
+                flash("Comment added!")
+                return redirect(link)
             case _:
                 return redirect(link)
 
-    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames) #render the html page with the filename passed to it
-    
+    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
+
+def approve_doc(doc, docID, docAuthor, link):
+    set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
+    message = make_alert_message("doc_approved", document_name=doc["document_name"]) #create an alert message
+    roles = get_roles_by_states(3) #get the roles that have select reviewer permissions
+    authorDone = False #initialize to false
+    for role in roles: #alert each role
+        add_alert_by_role(role["role_id"], message, link)
+        if docAuthor["role_id"] == role["role_id"]:
+            authorDone = True #if author role can select viewers they already received alert
+    if not authorDone: #if author hasnt already gotten an alert
+        add_alert_by_id(doc["author_id"], message, link) #add an alert to the author of the document
+
+def reject_doc(doc, docID):
+    docName = doc["document_name"]
+    remove_document(docID) #remove the document
+    message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
+    add_alert_by_id(doc['author_id'], message) #alert the author
+
+def remove_doc(doc, docID, docName):
+    remove_document(docID) #remove the document
+    message = make_alert_message("doc_removed", document_name=docName) #create an alert message
+    add_alert_by_id(doc["author_id"], message) #alert the author
+
+def mark_doc_review(doc, docID, docstate, link):
+    userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
+    message = make_alert_message("doc_user_added", document_name=doc["document_name"]) #create an alert message
+    for userID in userIDs: #for each user id
+        add_doc_reviewer(docID, userID) #add the user to the document reviewers
+        add_alert_by_id(userID, message, link) #alert the user they have been added
+    if docstate == 3:
+        set_doc_state(docID, 4) #set the state of the document to comment ready
+
+def upload_comment(doc, docID, docstate, comment, link): #upload a comment
+    add_comment(docID, g.user["user_id"], comment) #add comment to database
+    reviewers = get_doc_reviewers(docID)
+    message = make_alert_message("new_comment", document_name=doc["document_name"]) #create an alert message
+    for reviewer in reviewers: #alert all reviewers
+        add_alert_by_id(reviewer["reviewer_id"], message, link)
+    if docstate == 4:
+        set_doc_state(docID, 5) #set the state of the document to comments added
