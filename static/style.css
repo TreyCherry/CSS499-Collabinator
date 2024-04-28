@@ -113,7 +113,6 @@ button:disabled {
 	background-color: var(--dark-purple);
 	filter: brightness(0.9);
 	border-radius: 5px;
-	min-height: 20rem;
 }
 .right-box i {
 	display: block;

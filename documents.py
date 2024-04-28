@@ -247,7 +247,7 @@ def viewDocument():
                 flash("Comment added!")
                 return redirect(link)
             case "close comments on": #writing it this way is easier for the confirm function
-                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate > 8:
+                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate >= 8:
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -255,7 +255,17 @@ def viewDocument():
                 
                 flash("Comments closed!")
                 return redirect(link)
+            case "close review for":
+                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 9:
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                
+                
+
+                flash("Review closed!")
+                return redirect(url_for('index'))
             case _:
+                flash("Invalid action.")
                 return redirect(link)
 
     return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it

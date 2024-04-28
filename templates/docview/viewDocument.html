@@ -5,7 +5,7 @@
     {% elif check_state(g.stateint, 3) %}
         {% set header = "Select Reviewers for Document" %}
     {% endif %}
-    {% if bodytype < 8 %}
+    {% if bodytype != 9 %}
         <div class="top-box">
             <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
             <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
@@ -48,6 +48,8 @@
     {% endif %}
 {% endmacro %}
 
+{% set isreviewer = check_doc_reviewer(request.args['docID'], g.user['user_id']) %}
+
 {% block title %}View Document{% endblock %}
 
 {% block header %}
@@ -59,14 +61,13 @@
 
 {% block content %}
     <div class="relative-container">
-        {% if check_doc_reviewer(request.args['docID'], g.user['user_id']) or check_state(g.stateint, 2) or check_state(g.stateint, 3) %}
         <div class="right-box">
             <i class="click-icon fa-regular fa-trash-can big {% if docstate == 2 or not check_state(g.stateint, 2) %}disabled{% endif %}" onclick="setAction(this, 'remove')"></i>
             <i class="click-icon fa-solid fa-arrow-up-from-bracket big {% if not check_state(g.stateint, 7) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'update')"></i>
-            <i class="click-icon fa-regular fa-comment big" onclick="toggleComments()"></i>
-            <i class="click-icon fa-solid fa-comment-slash big {% if not check_state(g.stateint, 8) or docstate >= 8 %}disabled{% endif %}" onclick="setAction(this, 'close comments on')"></i>
+            <i class="click-icon fa-regular fa-comment big {% if docstate < 4 %}disabled{% endif %}" onclick="toggleComments()"></i>
+            <i class="click-icon fa-solid fa-comment-slash big {% if not isreviewer or not check_state(g.stateint, 8) or docstate >= 8 %}disabled{% endif %}" onclick="setAction(this, 'close comments on')"></i>
+            <i class="click-icon fa-regular fa-file-excel big {% if not isreviewer or not check_state(g.stateint, 9) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'close review for')"></i>
         </div>
-        {% endif %}
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
     <div id="comments" class="bottom-box hidden">
@@ -101,7 +102,7 @@
                     <p>No comments have been made yet.</p>
                 {% endif %}
             </div>
-            {% if docstate < 8 and check_doc_reviewer(request.args['docID'], g.user['user_id']) and check_state(g.stateint, 4) %}
+            {% if docstate < 8 and isreviewer and check_state(g.stateint, 4) %}
                 <form method="post" onsubmit="event.preventDefault()">
                     <div class="comment-container">
                         <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>
