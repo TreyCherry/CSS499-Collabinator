@@ -3,9 +3,13 @@
     {% if bodytype == 2 and check_state(g.stateint, 2)%}
         {% set header = "Document Awaiting Approval" %}
     {% elif check_state(g.stateint, 3) %}
-        {% set header = "Select Reviewers for Document" %}
+        {% if bodytype == 3 %}
+            {% set header = "Select Reviewers for Document" %}
+        {% else %}
+            {% set header = "Add Reviewers to Document" %}
+        {% endif %}
     {% endif %}
-    {% if bodytype != 9 %}
+    {% if header and bodytype != 9 %}
         <div class="top-box">
             <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
             <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
@@ -30,7 +34,7 @@
                                             <td>{{ roles[reviewer['role_id'] | string] }}</td>
                                             <td>
                                                 <div class="checkbox">
-                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
+                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}" {% if check_doc_reviewer(request.args['docID'], reviewer['user_id']) %}checked disabled{% endif %}>
                                                     <span class="checkmark" onclick="toggleCheck(this)"></span>
                                                 </div>
                                             </td>

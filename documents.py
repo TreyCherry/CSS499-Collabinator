@@ -10,7 +10,7 @@ from .db import (
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
     add_comment, get_comments, get_comment, add_response, clear_doc_reviewers,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
-    check_all_resolved, check_new_responses, resolve_all
+    check_all_resolved, check_new_responses, resolve_all, get_doc_reviewers
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -23,7 +23,10 @@ def index():
     docList = None #initialize doclist to None for checking in index.html
     authors = {} #set authors to an empty dictionary
     if check_state(g.stateint, 0): #check if user has read permissions
-        docList = get_documents()
+        if check_state(g.stateint, 2): #if moderator show all docs
+            docList = get_documents()
+        else:
+            docList = get_documents(3) #if not only show approved docs
         if docList is not None:
             for doc in docList:
                 user = get_user_by_id(doc["author_id"]) #get author info from db
@@ -166,6 +169,8 @@ def viewDocument():
             if docstate <= 3 and not check_state(g.stateint, 3): #check if document is in review stage
                 return redirect(url_for('index')) #if user does not have mark for review role then redirect 
         
+
+    selectedReviewers = get_doc_reviewers(docID)
     reviewers = None
     roleNames = None
     if docstate >= 3:
@@ -200,7 +205,7 @@ def viewDocument():
                 approve_doc(doc, docID, docAuthor, link) #approve the document
                 
                 flash("Document approved!")
-                return redirect(url_for('index'))
+                return redirect(link)
             case "reject":
                 if docstate != 2 or not check_state(g.stateint, 2): #if user is approver
                     flash("You do not have permission to do that.")
@@ -230,7 +235,11 @@ def viewDocument():
                 
                 mark_doc_review(doc, docID, docstate, link) #mark the document for review
 
-                flash("Document review started!")
+                if len(selectedReviewers) > 0: #check if adding new members or not
+                    flash("Document review updated!")
+                else:
+                    flash("Document review started!")
+
                 return redirect(url_for('index'))
             case "comment":
                 if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
@@ -268,7 +277,7 @@ def viewDocument():
                 flash("Invalid action.")
                 return redirect(link)
 
-    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
+    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, selectedReviewers=selectedReviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
 
 def approve_doc(doc, docID, docAuthor, link):
     set_doc_state(docID, 3) #set the state of the document to ready to select reviewers

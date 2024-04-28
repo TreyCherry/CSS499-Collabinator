@@ -94,11 +94,13 @@ def get_doc_by_id(id): #search database for document by id
         'SELECT * FROM Documents WHERE document_id = ?', (id,)
     ).fetchone() #return one result
 
-def get_documents(): #get all documents in database
+def get_documents(min_state_id = None): #get all documents in database
+    query = 'SELECT * FROM Documents' #initial query
+    if min_state_id is not None:
+        query += ' WHERE state_id > ' + str(min_state_id) #add where clause
+    query += ' ORDER BY last_updated DESC' #order by last updated
     db = get_db()
-    return db.execute(
-        'SELECT * FROM Documents ORDER BY last_updated DESC'
-    ).fetchall()
+    return db.execute(query).fetchall() #get all documents that match
 
 def remove_document(id): #remove a document by id
     db = get_db()
