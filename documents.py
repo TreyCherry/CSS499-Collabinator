@@ -8,7 +8,8 @@ from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
-    add_comment, get_doc_reviewers, get_comments, get_comment
+    add_comment, get_doc_reviewers, get_comments, get_comment, add_response,
+    get_doc_by_name, get_responses
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -42,7 +43,12 @@ def addDocument():
             flash("No file part.") #if not flash error
             return redirect(request.url)
         file = request.files['file'] #get the file from the request
-        if upload_file(file, g.user["user_id"]): #upload_file uploads the file to the server and returns true if it succeeds false otherwise
+        docName = upload_file(file, g.user["user_id"]) #upload_file uploads the file to the server and returns true if it succeeds false otherwise
+        if docName is not None:
+            message = make_alert_message("doc_upload", document_name=docName) #create an alert messages
+            roles = get_roles_by_states(2) #get the roles that have approve permissions
+            for role in roles:
+                add_alert_by_role(role["role_id"], message, url_for('docs.viewDocument') + "?docID=" + str(get_doc_by_name(docName)["document_id"]))
             flash("Upload successful!")
             return redirect(url_for('index')) #if it uploaded successfully take us back to homepage
         
@@ -70,7 +76,7 @@ def viewer():
 
 @bp2.route('/responses', methods=('GET', 'POST'))
 @login_required
-def responses():
+def viewResponses():
     if not check_state(g.stateint, 0): #if user does not have read permissions
         return redirect(url_for('index')) #take them back to home page
     commentID = request.args.get("commentID")
@@ -79,22 +85,37 @@ def responses():
     
     comment = get_comment(commentID)
     users = get_users()
-    link = url_for('docs.responses') + "?commentID=" + commentID
+    link = url_for('docs.viewResponses') + "?commentID=" + commentID
 
     if request.method == 'POST':
         if comment['resolved'] == 1 or not check_doc_reviewer(comment['document_id'], g.user['user_id']):
-            pass
-
+            flash("Unable to add response")
+            return redirect(link)
+        
         response = request.form.get("response")
         if not response or response == "":
             return redirect(link)
         
+        add_response(commentID, g.user["user_id"], response)
+        message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=get_doc_by_id(comment["document_id"])["document_name"])
+        
+        reviewers = get_doc_reviewers(comment["document_id"]) #get all doc reviewers
+        for reviewer in reviewers: #alert them
+            add_alert_by_id(reviewer["reviewer_id"], message, link)
+
+        if get_doc_by_id(comment["document_id"])["state_id"] == 5: #if doc still in stage 5 update to 6
+            set_doc_state(comment["document_id"], 6)
+
+        flash("Response submitted")
+        return redirect(link)
+        
+    responses = get_responses(commentID) #get all responses associated with comment for doc rendering
 
     usernames = {}
     for user in users:
         usernames[str(user["user_id"])] = user["first_name"] + " " + user["last_name"]
 
-    return render_template('docview/responses.html', activeNav="docs", comment=comment, usernames=usernames)
+    return render_template('docview/responses.html', activeNav="docs", comment=comment, usernames=usernames, responses=responses)
 
 @bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
@@ -107,6 +128,9 @@ def viewDocument():
     
     docID = request.args.get("docID")
     doc = get_doc_by_id(docID) #get the document from the database
+    if doc is None:
+        flash("Document not found")
+        return redirect(url_for('index'))
     docstate = doc["state_id"]
     docAuthor = get_user_by_id(doc["author_id"])
     isAuthor = doc["author_id"] == g.user["user_id"]
@@ -157,6 +181,7 @@ def viewDocument():
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
+                docName = doc["document_name"]
                 reject_doc(doc, docID) #reject the document
 
                 flash(f"Document \"{docName}\" marked as rejected and removed from server.")

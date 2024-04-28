@@ -4,9 +4,9 @@
         <span>Posted {{ date_concise(comment["date_created"]) }}</span>
         <div class="relative-container">
             <h3>{{ usernames[comment["author_id"]|string] }}</h3>
-            <p>
+            <p>{% if key == "comment" %}<b>{% endif %}
                 {{ comment[key] }}
-            </p>
+            {% if key == "comment" %}</b>{% endif %}</p>
         </div>
     </div>
 {% endmacro %}
@@ -24,12 +24,14 @@
                 {% endfor %}
             {% endif %}
         </div>
+        {% if check_state(g.stateint, 5) %}
         <form method="post">
                 <div class="comment-container reply-container">
                     <textarea class="comment-input" placeholder="Add a response" name="response"></textarea>
                     <button>Comment</button>
                 </div>
         </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

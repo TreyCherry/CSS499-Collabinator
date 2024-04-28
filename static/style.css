@@ -43,7 +43,7 @@ body {
 	font-size: 1.2rem;
 }
 
-button {
+button, input[type=file] {
 	width: 100%;
 	padding: 0.75rem;
 	background-color: var(--vdark-purple);
@@ -53,6 +53,11 @@ button {
 	cursor: pointer;
 	margin-top: 0.8rem;
 	font-size: 1.2rem;
+}
+
+input#file-upload-button {
+	background: none;
+	border: none;
 }
 
 .display-box span {

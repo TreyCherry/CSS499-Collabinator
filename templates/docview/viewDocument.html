@@ -152,7 +152,7 @@
         }
 
         function goToCommentReplies(commentId) { //go to replies for comment
-            window.location.href = "{{ url_for('docs.responses') }}?commentID=" + commentId;
+            window.location.href = "{{ url_for('docs.viewResponses') }}?commentID=" + commentId;
         }
     {% endblock %}
 </script>
