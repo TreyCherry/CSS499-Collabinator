@@ -3,6 +3,7 @@
 {% block content %}
 <div class="display-box">
     <h1>{% block title %}Upload{% endblock %} Document</h1>
+    {% block extra %}{% endblock %}
     <form method="post" enctype="multipart/form-data"> {# basic form for uploading files #}
         <input type="file" name="file">
         <button type="submit">Upload</button>

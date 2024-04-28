@@ -61,9 +61,23 @@ def addDocument():
             flash("Upload successful!")
             return redirect(url_for('index')) #if it uploaded successfully take us back to homepage
         
-        
 
     return render_template('docview/addDocument.html', activeNav="docs") #render the html page for uploading a document
+
+@bp2.route('/update', methods=('GET', 'POST'))
+@login_required
+def update():
+    docID = request.args.get("docID") #check for docID in the url
+    if not check_state(g.stateint, 7) or docID is None or not check_doc_reviewer(docID, g.user["user_id"]):
+        if docID is not None: #run checks
+            flash("You are not allowed to do that.") #if user doesnt have permission say this
+        else:
+            flash("No document specified.") #if no document is specified say this
+        return redirect(url_for('index'))
+    doc = get_doc_by_id(docID)
+    docName = doc["document_name"]
+    
+    return render_template('docview/updateDocument.html', docID=docID, docName=docName, activeNav="docs")
 
 @bp2.route('/viewer') #this is used for displaying the file itself. Best to call this in an iframe on another page than to go to it directly
 @login_required
@@ -232,8 +246,6 @@ def viewDocument():
                 
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
-            case "update":
-                pass
             case "markreview":
                 if docstate < 3 or not check_state(g.stateint, 3): #if user is not reviewer
                     flash("You do not have permission to do that.")
