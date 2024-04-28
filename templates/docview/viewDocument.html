@@ -84,20 +84,28 @@
         <h2>Comments</h2>
         <div class="comment-section">
             <div class="comment-box">
-                <div class="comment-wrapper to-comment">
-                    <span>Sent: 11:11 pm</span>
-                    <div>
-                        <h3>User Name</h3>
-                        <p>
-                            Example comments yada yada
-                        </p>
+            {% if comments %}
+                {% for comment in comments %}
+                    <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %}">
+                        <span>Sent: {{ date_format(comment["date_created"])[11:-3] }}</span>
+                        <div>
+                            <h3>{{ usernames[comment["author_id"]|string] }}</h3>
+                            <p>
+                                {{ comment["comment"] }}
+                            </p>
+                        </div>
                     </div>
+                {% endfor %}
+            {% else %}
+                <p>No comments have been made yet.</p>
+            {% endif %}
+            </div>
+            <form method="post">
+                <div class="comment-container">
+                    <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>
+                    <button onclick="setAction('comment', this.form, false)">Comment</button>
                 </div>
-            </div>
-            <div class="comment-container">
-                <textarea class="comment-input" placeholder="Add a comment"></textarea>
-                <button>Comment</button>
-            </div>
+            </form>
         </div>
     </div>
 {% endblock %}

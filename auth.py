@@ -82,12 +82,11 @@ def check_activity():
     if g.user is not None: #if user is logged in
         lastactive = get_user_by_id(g.user["user_id"])['last_active'] #get last active time from db
         if lastactive is None:
-            return
+            return redirect(url_for('auth.logout'))
         timeSince = date_delta(lastactive)
         
         if timeSince.seconds < 600 : #if last active time is less than 10 minutes
-            update_activity(g.user["user_id"]) #update last active time in db to now
-            return 
+            return update_activity(g.user["user_id"]) #update last active time in db to now
         
         session.clear() #otherwise clear session to logout user
         flash("Inactive for more than 10 minutes. Please log in again.") #flash message to login again

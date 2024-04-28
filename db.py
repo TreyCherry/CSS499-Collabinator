@@ -134,6 +134,24 @@ def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
     db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
     db.commit()
 
+def check_doc_reviewer(doc_id, reviewer_id): #check if a reviewer is on the list for the document review
+    db = get_db()
+    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ? AND reviewer_id = ?', (doc_id, reviewer_id)).fetchone() is not None
+
+def get_doc_reviewers(doc_id): #get all reviewers for a document
+    db = get_db()
+    return db.execute('SELECT reviewer_id FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
+
+def add_comment(doc_id, author_id, comment):
+    db = get_db()
+    now = new_date()
+    db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
+    db.commit()
+
+def get_comments(doc_id):
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? ORDER BY date_created', (doc_id,)).fetchall()
+
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []
     i=0
