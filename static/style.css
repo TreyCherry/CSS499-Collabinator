@@ -43,7 +43,7 @@ body {
 	font-size: 1.2rem;
 }
 
-button {
+button, input[type=file] {
 	width: 100%;
 	padding: 0.75rem;
 	background-color: var(--vdark-purple);
@@ -53,6 +53,11 @@ button {
 	cursor: pointer;
 	margin-top: 0.8rem;
 	font-size: 1.2rem;
+}
+
+input#file-upload-button {
+	background: none;
+	border: none;
 }
 
 .display-box span {
@@ -127,7 +132,7 @@ button:disabled {
 	border: var(--darker-purple) 1px solid;
 	border-radius: 5px;
 	background-color: var(--dark-purple);
-	color: var(--darkest-purple);
+	color: var(--darkest-purple) !important;
 	height: 24rem;
 	overflow-y: auto;
 	box-sizing: border-box;
@@ -175,13 +180,13 @@ button:disabled {
 }
 
 .comment-input {
-	padding: 0.5rem;
+	padding: 0.5rem !important;
 	flex: 3;
 	margin-right: 1.5rem;
 	margin-left: 0.5rem;
-	border: var(--darker-purple) 1px solid;
-	border-radius: 3px;
-	resize: none;
+	border: var(--darker-purple) 1px solid !important;
+	border-radius: 3px !important;
+	resize: none !important;
 	overflow: auto;
 	background-color: var(--light-purple);
 	filter: brightness(1.3);
@@ -199,6 +204,28 @@ button:disabled {
 	margin: 0;
 	height: 3rem;
 	margin-top: auto;
+}
+
+.response-container {
+	width: 70%;
+	margin: auto;
+}
+
+.replies-box {
+	height: 34rem;
+	margin-bottom: 5rem;
+}
+
+.reply-container {
+	width: 90%;
+	margin: auto;
+	margin-bottom: 5rem;
+}
+
+.back-button {
+	position: absolute;
+	top: 1.2rem;
+	left: 1.2rem;
 }
 
 .click-icon:hover:not(.disabled) {
@@ -476,6 +503,10 @@ div.savewrapper {
 	border-radius: 5px 5px 0 0;
 	padding-bottom: 3rem;
 	overflow-y: hidden;
+}
+
+.response-container {
+	width: 60%;
 }
 
 .comments-disabled {

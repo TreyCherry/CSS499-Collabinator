@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% macro responseBox(key, comment) %}
+    <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %}">
+        <span>Posted {{ date_concise(comment["date_created"]) }}</span>
+        <div class="relative-container">
+            <h3>{{ usernames[comment["author_id"]|string] }}</h3>
+            <p>{% if key == "comment" %}<b>{% endif %}
+                {{ comment[key] }}
+            {% if key == "comment" %}</b>{% endif %}</p>
+        </div>
+    </div>
+{% endmacro %}
+
+{% block content %}
+<div class="display-box memberlist relative-container">
+    <a class="back-button" href="{{ url_for('docs.viewDocument') }}?docID={{ comment['document_id'] }}">Back to Document</a>
+    <h1>{% block title %}Comment Responses{% endblock %}</h1>
+    <div class="response-container">
+        <div class="main-content comment-box replies-box">
+            {{ responseBox("comment", comment)}}
+            {% if responses %}
+                {% for response in responses %}
+                    {{ responseBox("response", response)}}
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% if check_state(g.stateint, 5) %}
+        <form method="post">
+                <div class="comment-container reply-container">
+                    <textarea class="comment-input" placeholder="Add a response" name="response"></textarea>
+                    <button>Comment</button>
+                </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+<script>
+    {% block scripts %}
+        window.addEventListener("keydown", (event) => { //resize the comment input when new lines added
+            if (event.target.classList.contains("comment-input")) {
+                event.target.style.height = "auto";
+                event.target.style.height = event.target.scrollHeight + "px";
+            }
+        });
+    {% endblock %}
+</script>

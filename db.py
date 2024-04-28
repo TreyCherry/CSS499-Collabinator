@@ -32,7 +32,7 @@ STATES = [
     State(3, "Select", "Select Reviewers", "Select Reviewers"),
     State(4, "Comment", "Ready for Review", "Comment on Documents"),
     State(5, "Respond", "Comments to View", "Respond to Comments"),
-    State(6, "Resolve", "Responded", "Resolve Comments"),
+    State(6, "Resolve", "New Responses to Comments", "Resolve Comments"),
     State(7, "Upload Update", "Resolved", "Upload Updates to Documents"),
     State(8, "Close Comments", "Comments Closed", "Close Comments"),
     State(9, "Close Review", "Review Closed", "Close Document Review"),
@@ -48,25 +48,25 @@ def allowed_file(filename): #checks a string filename for if it is in the allowe
 def upload_file(file, author_id): #handle uploading a file from file input
     if file.filename == '': #if no file is input this will be blank
         flash('No selected file') #set error message and return false
-        return False #false returns when failed to upload file, true if succeeds
+        return None #false returns when failed to upload file, true if succeeds
     if not allowed_file(file.filename): #check if file type is allowed
         flash('File type not allowed')
-        return False #if not return false
+        return None #if not return false
     filename = secure_filename(file.filename) #secure filename removes potentially dangerous characters
 
     name, type = get_name_type(filename) #get name and type of file
     if (get_doc_by_name(name) is not None): #check if document already has this name in database
         flash('Document already exists')
-        return False
+        return None
     
     try:
         file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the file to the configured folder
     except:
         flash('File could not be saved')
-        return False
+        return None
     
     update_document(name, type, author_id) #update document will add a new document or update an existing one
-    return True #file upload succeeded
+    return name #file upload succeeded
 
 def get_name_type(filename): #get both name without extension and 2 value file type
     name, ext = filename.rsplit('.', 1) #split filename by last '.'
@@ -150,9 +150,23 @@ def add_comment(doc_id, author_id, comment):
     db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
     db.commit()
 
-def get_comments(doc_id):
+def get_comments(doc_id): #get all comments on document
     db = get_db()
     return db.execute('SELECT * FROM Comments WHERE document_id = ? ORDER BY date_created', (doc_id,)).fetchall()
+
+def get_comment(comment_id): #get a single comment by id
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
+
+def add_response(comment_id, author_id, response):
+    db = get_db()
+    now = new_date()
+    db.execute('INSERT INTO Responses (comment_id, author_id, response, date_created) VALUES (?, ?, ?, ?)', (comment_id, author_id, response, now))
+    db.commit()
+
+def get_responses(comment_id): #get all responses to a comment
+    db = get_db()
+    return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
 
 def get_states(stateint): #get a list of allowed states based on stateint
     states = []
