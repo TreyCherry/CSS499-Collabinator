@@ -40,5 +40,7 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
             return f"{kwargs['first_name']}'s comment \"{kwargs['comment_text']}\" on document \"{kwargs['document_name']}\" has been resolved."
         case "comments_closed":
             return f"Review Update: Comments have been closed for document \"{kwargs['document_name']}\"."
+        case "review_closed":
+            return f"Review Update: Review for document \"{kwargs['document_name']}\" has been closed."
         case _:
             return None #if message type doesn't exist, return None"

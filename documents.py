@@ -8,7 +8,7 @@ from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
-    add_comment, get_comments, get_comment, add_response,
+    add_comment, get_comments, get_comment, add_response, clear_doc_reviewers,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
     check_all_resolved, check_new_responses, resolve_all
 )
@@ -217,7 +217,7 @@ def viewDocument():
                     return redirect(link)
                     
                 docName = doc["document_name"]
-                remove_doc(doc, docID, docName)
+                remove_doc(docID, docName)
                 
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
@@ -260,7 +260,7 @@ def viewDocument():
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
-                
+                close_review(doc, docID, link)
 
                 flash("Review closed!")
                 return redirect(url_for('index'))
@@ -288,10 +288,11 @@ def reject_doc(doc, docID):
     message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
     add_alert_by_id(doc['author_id'], message) #alert the author
 
-def remove_doc(doc, docID, docName):
-    remove_document(docID) #remove the document
+def remove_doc(docID, docName):
     message = make_alert_message("doc_removed", document_name=docName) #create an alert message
-    add_alert_by_id(doc["author_id"], message) #alert the author
+    add_alert_by_doc_reviewers(docID, message) #alert the reviewers
+    clear_doc_reviewers(docID) #clear any reviewers from the list
+    remove_document(docID) #remove the document
 
 def mark_doc_review(doc, docID, docstate, link):
     userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
@@ -314,3 +315,9 @@ def close_comments(doc, docID, link):
     set_doc_state(docID, 8)
     message = make_alert_message("comments_closed", document_name=doc["document_name"])
     add_alert_by_doc_reviewers(docID, message, link)
+
+def close_review(doc, docID, link):
+    set_doc_state(docID, 9)
+    message = make_alert_message("review_closed", document_name=doc["document_name"])
+    add_alert_by_doc_reviewers(docID, message, link)
+    clear_doc_reviewers(docID)

@@ -144,6 +144,11 @@ def get_doc_reviewers(doc_id): #get all reviewers for a document
     db = get_db()
     return db.execute('SELECT * FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
 
+def clear_doc_reviewers(doc_id): #clear all reviewers for a document
+    db = get_db()
+    db.execute('DELETE FROM DocReviewers WHERE document_id = ?', (doc_id,))
+    db.commit()
+
 def add_comment(doc_id, author_id, comment):
     db = get_db()
     now = new_date()
