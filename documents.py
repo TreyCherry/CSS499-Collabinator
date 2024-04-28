@@ -247,6 +247,9 @@ def viewDocument():
 
                 flash("Comment added!")
                 return redirect(link)
+            case "close comments on": #writing it this way is easier for the confirm function
+                flash("Comments closed!")
+                return redirect(link)
             case _:
                 return redirect(link)
 

@@ -67,6 +67,7 @@
             <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
             {% endif %}
             <i class="click-icon fa-regular fa-comment big" onclick="toggleComments()"></i>
+            <i class="click-icon fa-solid fa-comment-slash big" onclick="setAction('close comments on')"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
