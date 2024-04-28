@@ -5,9 +5,11 @@ from flask import current_app, g, flash
 from werkzeug.security import generate_password_hash, gen_salt
 from werkzeug.utils import secure_filename
 
-import comtypes.client #needed for docx conversion
+
+import subprocess
 
 import os
+from sys import platform
 
 from dataclasses import dataclass
 import datetime
@@ -59,8 +61,19 @@ def upload_file(file, author_id): #handle uploading a file from file input
         flash('Document already exists')
         return None
     
+    #enter filetype conversion here. File has been uploaded and type checked. We know it's an accepted type and we know if it already exists. Now see if it needs to be converted
+    #if not type == "txt" or not type == "pdf":
+
+
     try:
-        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the file to the configured folder
+        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the unconverted file to the configured folder
+
+        if type == 2: #file needs to be converted. use libreoffice to do so
+            outroute = current_app.config['UPLOAD_FOLDER'] #format file output path string
+            fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
+            subprocess.run(f'libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
+
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
     except:
         flash('File could not be saved')
         return None
@@ -72,8 +85,10 @@ def get_name_type(filename): #get both name without extension and 2 value file t
     name, ext = filename.rsplit('.', 1) #split filename by last '.'
     if ext == 'txt':
         type = 0 # 0 is txt
-    else:
+    elif ext == 'pdf':
         type = 1 # 1 is pdf
+    else:
+        type = 2 # 2 is other extension
     return name, type #return both
 
 def get_filename(doc): #get file name and type from returned database row of document
@@ -495,24 +510,3 @@ def add_alert_by_doc_reviewers(docID, message, link=None):
     for reviewer in reviewers:
         add_alert_by_id(reviewer["reviewer_id"], message, link)
 
-def convert_to_pdf(input_file):
-    file_extension = os.path.splitext(input_file)[1].lower()
-    abs_input_file = os.path.abspath(input_file)
-    abs_output_file = os.path.splitext(abs_input_file)[0] + '.pdf'
-
-    if file_extension in ['.doc', '.docx', '.rtf']:  # Handle Word and RTF files
-        app = comtypes.client.CreateObject('Word.Application')
-        doc = app.Documents.Open(abs_input_file)
-        doc.SaveAs(abs_output_file, FileFormat=17)  # wdFormatPDF
-        doc.Close()
-        app.Quit()
-    elif file_extension in ['.ppt', '.pptx']:  # Handle PowerPoint files
-        app = comtypes.client.CreateObject('PowerPoint.Application')
-        presentation = app.Presentations.Open(abs_input_file)
-        presentation.SaveAs(abs_output_file, FileFormat=32)  # ppSaveAsPDF
-        presentation.Close()
-        app.Quit()
-    else:
-        raise ValueError("Unsupported file type.")
-
-    return abs_output_file
