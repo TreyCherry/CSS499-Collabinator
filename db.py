@@ -130,6 +130,8 @@ def set_doc_state(doc_id, state_id): #set the state of a document
     db.commit()
 
 def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
+    if check_doc_reviewer(doc_id, reviewer_id):
+        return
     db = get_db()
     db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
     db.commit()

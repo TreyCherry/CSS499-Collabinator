@@ -1,52 +1,50 @@
 {% extends "base.html" %}
 {% macro topBox(bodytype) %}
-    {% if check_state(g.stateint, bodytype) %}
-        {% if bodytype == 2 %}
-            {% set header = "Document Awaiting Approval" %}
-        {% elif bodytype == 3 %}
-            {% set header = "Select Reviewers for Document" %}
-        {% endif %}
-        {% if header %}
-            <div class="top-box">
-                <span id="unhide" class="hidden">{{ header }}</span>
-                <div id="hide-box">
-                    <h2>{{ header }}</h2>
-                    {% if bodytype==2 %}
-                        <span>Mark the document as approved for review?</span>
-                        <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
-                        <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
-                    {% elif bodytype==3 %}
-                        {% if reviewers %}
-                            <form method="post" class="main-content wider">
-                                <table class="main-content">
-                                    <thead>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Add to Review?</th>
-                                    </thead>
-                                    <tbody>
-                                        {% for reviewer in reviewers %}
-                                            <tr>
-                                                <td>{{ reviewer['first_name'] }} {{ reviewer['last_name'] }}</td>
-                                                <td>{{ roles[reviewer['role_id'] | string] }}</td>
-                                                <td>
-                                                    <div class="checkbox">
-                                                        <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
-                                                        <span class="checkmark" onclick="toggleCheck(this)"></span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                                <button class="fix-size-button" onclick="setAction('markreview', this.form, false)">Submit</button>
-                            </form>
-                        {% endif %}
+    {% if bodytype == 2 and check_state(g.stateint, 2)%}
+        {% set header = "Document Awaiting Approval" %}
+    {% elif check_state(g.stateint, 3) %}
+        {% set header = "Select Reviewers for Document" %}
+    {% endif %}
+    {% if header %}
+        <div class="top-box">
+            <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
+            <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
+                <h2>{{ header }}</h2>
+                {% if bodytype==2 %}
+                    <span>Mark the document as approved for review?</span>
+                    <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
+                    <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
+                {% else %}
+                    {% if reviewers %}
+                        <form method="post" class="main-content wider">
+                            <table class="main-content">
+                                <thead>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Add to Review?</th>
+                                </thead>
+                                <tbody>
+                                    {% for reviewer in reviewers %}
+                                        <tr>
+                                            <td>{{ reviewer['first_name'] }} {{ reviewer['last_name'] }}</td>
+                                            <td>{{ roles[reviewer['role_id'] | string] }}</td>
+                                            <td>
+                                                <div class="checkbox">
+                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
+                                                    <span class="checkmark" onclick="toggleCheck(this)"></span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <button class="fix-size-button" onclick="setAction('markreview', this.form, false)">Submit</button>
+                        </form>
                     {% endif %}
-                </div>
-                <i class="min-icon fa-solid fa-angle-up big" onclick="hideBox(this)"></i>
+                {% endif %}
             </div>
-        {% endif %}
+            <i class="min-icon fa-solid fa-angle-{% if bodytype > 3 %}down{% else %}up{% endif %} big" onclick="hideBox(this)"></i>
+        </div>
     {% endif %}
 {% endmacro %}
 

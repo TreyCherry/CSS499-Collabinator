@@ -91,7 +91,7 @@ def viewDocument():
         
     reviewers = None
     roleNames = None
-    if docstate == 3:
+    if docstate >= 3:
         reviewRoles = get_roles_by_states(*range(4,10)) #roles with permissions 4-9
         reviewers = set()
         roleNames = {}
@@ -146,11 +146,11 @@ def viewDocument():
             case "update":
                 pass
             case "markreview":
-                if docstate != 3 or not check_state(g.stateint, 3): #if user is not reviewer
+                if docstate < 3 or not check_state(g.stateint, 3): #if user is not reviewer
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
-                mark_doc_review(doc, docID, link) #mark the document for review
+                mark_doc_review(doc, docID, docstate, link) #mark the document for review
 
                 flash("Document review started!")
                 return redirect(url_for('index'))
@@ -197,13 +197,14 @@ def remove_doc(doc, docID, docName):
     message = make_alert_message("doc_removed", document_name=docName) #create an alert message
     add_alert_by_id(doc["author_id"], message) #alert the author
 
-def mark_doc_review(doc, docID, link):
+def mark_doc_review(doc, docID, docstate, link):
     userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
     message = make_alert_message("doc_user_added", document_name=doc["document_name"]) #create an alert message
     for userID in userIDs: #for each user id
         add_doc_reviewer(docID, userID) #add the user to the document reviewers
         add_alert_by_id(userID, message, link) #alert the user they have been added
-    set_doc_state(docID, 4) #set the state of the document to comment ready
+    if docstate == 3:
+        set_doc_state(docID, 4) #set the state of the document to comment ready
 
 def upload_comment(doc, docID, docstate, comment, link): #upload a comment
     add_comment(docID, g.user["user_id"], comment) #add comment to database
