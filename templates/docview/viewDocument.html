@@ -85,8 +85,9 @@
             {% if comments %}
                 {% for comment in comments %}
                     <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %}">
-                        <span>Sent: {{ date_format(comment["date_created"])[11:-3] }}</span>
-                        <div>
+                        <span>Posted {{ date_concise(comment["date_created"]) }}</span>
+                        <div class="relative-container">
+                            <i class="min-icon fa-regular fa-comment-dots" onclick="goToCommentReplies({{ comment['comment_id'] }})"></i>
                             <h3>{{ usernames[comment["author_id"]|string] }}</h3>
                             <p>
                                 {{ comment["comment"] }}
@@ -98,12 +99,14 @@
                 <p>No comments have been made yet.</p>
             {% endif %}
             </div>
+            {% if check_state(g.stateint, 4) %}
             <form method="post">
                 <div class="comment-container">
                     <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>
                     <button onclick="setAction('comment', this.form, false)">Comment</button>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -146,6 +149,10 @@
             if (!commentBox.classList.contains("hidden")) { //if not hidden now
                 commentBox.scrollIntoView({behavior: "smooth"}); //scroll to comments box
             } 
+        }
+
+        function goToCommentReplies(commentId) { //go to replies for comment
+            window.location.href = "{{ url_for('docs.replies') }}?commentID=" + commentId;
         }
     {% endblock %}
 </script>

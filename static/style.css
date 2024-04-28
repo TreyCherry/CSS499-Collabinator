@@ -158,6 +158,11 @@ button:disabled {
 	font-weight: bold;
 }
 
+.comment-wrapper p {
+	overflow-wrap: break-word;
+	text-align: left;
+}
+
 .from-comment {
 	text-align: left;
 }
@@ -181,7 +186,6 @@ button:disabled {
 	background-color: var(--light-purple);
 	filter: brightness(1.3);
 	font-size: 1.1rem;
-	overflow-wrap: normal;
 	height: auto;
 }
 
@@ -412,7 +416,7 @@ div.savewrapper {
 }
 
 .min-icon:hover {
-	color: var(--darker-purple);
+	color: var(--darker-purple) !important;
 }
 
 .description {
@@ -501,6 +505,16 @@ div.savewrapper {
 .corner {
 	bottom: unset !important;
 	top: 2rem;
+}
+.comment-wrapper .min-icon {
+	position: absolute;
+	color: var(--vdark-purple);
+}
+.to-comment .min-icon {
+	left: 1.2rem;
+} 
+.from-comment .min-icon {
+	right: 1.2rem;
 }
 
 .top-box {

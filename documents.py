@@ -68,6 +68,16 @@ def viewer():
 
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], request.args.get("filename"), mimetype=type) #send the file with the specified mimetype
 
+@bp2.route('/replies')
+@login_required
+def replies():
+    if not check_state(g.stateint, 0): #if user does not have read permissions
+        return redirect(url_for('index')) #take them back to home page
+    commentID = request.args.get("commentID")
+    if not commentID:
+        return redirect(url_for('index'))
+    return render_template('docview/replies.html', activeNav="docs")
+
 @bp2.route('/view', methods=('GET', 'POST')) #this is the actual view site
 @login_required
 def viewDocument():
