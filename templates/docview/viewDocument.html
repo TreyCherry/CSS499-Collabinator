@@ -5,15 +5,15 @@
     {% elif check_state(g.stateint, 3) %}
         {% set header = "Select Reviewers for Document" %}
     {% endif %}
-    {% if header %}
+    {% if bodytype != 9 %}
         <div class="top-box">
             <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
             <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
                 <h2>{{ header }}</h2>
                 {% if bodytype==2 %}
                     <span>Mark the document as approved for review?</span>
-                    <i class="click-icon fa-solid fa-check big" onclick="setAction('approve')"></i>
-                    <i class="click-icon fa-solid fa-xmark big" onclick="setAction('reject')"></i>
+                    <i class="click-icon fa-solid fa-check big" onclick="setAction(this, 'approve')"></i>
+                    <i class="click-icon fa-solid fa-xmark big" onclick="setAction(this, 'reject')"></i>
                 {% else %}
                     {% if reviewers %}
                         <form method="post" class="main-content wider">
@@ -38,7 +38,7 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
-                            <button class="fix-size-button" onclick="setAction('markreview', this.form, false)">Submit</button>
+                            <button class="fix-size-button" onclick="setAction(this, 'markreview', this.form, false)">Submit</button>
                         </form>
                     {% endif %}
                 {% endif %}
@@ -47,6 +47,8 @@
         </div>
     {% endif %}
 {% endmacro %}
+
+{% set isreviewer = check_doc_reviewer(request.args['docID'], g.user['user_id']) %}
 
 {% block title %}View Document{% endblock %}
 
@@ -60,13 +62,11 @@
 {% block content %}
     <div class="relative-container">
         <div class="right-box">
-            {% if docstate != 2 and check_state(g.stateint, 2) %}
-            <i class="click-icon fa-regular fa-trash-can big" onclick="setAction('remove')"></i>
-            {% endif %}
-            {% if check_doc_reviewer(request.args['docID'], g.user['user_id']) and check_state(g.stateint, 7) %}
-            <i class="click-icon fa-solid fa-arrow-up-from-bracket big" onclick="setAction('update')"></i>
-            {% endif %}
-            <i class="click-icon fa-regular fa-comment big" onclick="toggleComments()"></i>
+            <i class="click-icon fa-regular fa-trash-can big {% if docstate == 2 or not check_state(g.stateint, 2) %}disabled{% endif %}" onclick="setAction(this, 'remove')"></i>
+            <i class="click-icon fa-solid fa-arrow-up-from-bracket big {% if not check_state(g.stateint, 7) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'update')"></i>
+            <i class="click-icon fa-regular fa-comment big {% if docstate < 4 %}disabled{% endif %}" onclick="toggleComments()"></i>
+            <i class="click-icon fa-solid fa-comment-slash big {% if not isreviewer or not check_state(g.stateint, 8) or docstate >= 8 %}disabled{% endif %}" onclick="setAction(this, 'close comments on')"></i>
+            <i class="click-icon fa-regular fa-file-excel big {% if not isreviewer or not check_state(g.stateint, 9) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'close review for')"></i>
         </div>
         <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
@@ -102,11 +102,11 @@
                     <p>No comments have been made yet.</p>
                 {% endif %}
             </div>
-            {% if check_doc_reviewer(request.args['docID'], g.user['user_id']) and check_state(g.stateint, 4) %}
-                <form method="post">
+            {% if docstate < 8 and isreviewer and check_state(g.stateint, 4) %}
+                <form method="post" onsubmit="event.preventDefault()">
                     <div class="comment-container">
                         <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>
-                        <button onclick="setAction('comment', this.form, false)">Comment</button>
+                        <button onclick="setAction(this, 'comment', this.form, false)">Comment</button>
                     </div>
                 </form>
             {% endif %}
@@ -129,7 +129,8 @@
             node.classList.toggle("fa-angle-up");
             node.classList.toggle("fa-angle-down");
         }
-        function setAction(action, otherform=null, doConfirm=true) { //{# set the action to be completed on submission #}
+        function setAction(node, action, otherform=null, doConfirm=true) { //{# set the action to be completed on submission #}
+            if (node.classList != null && node.classList.contains("disabled")) return; //dont do it if disabled
             actionInput = document.getElementById("docAction"); //{# hidden action input #}
             form = actionInput.form; //{# get the attached form #}
             actionInput.value = action; //{# set the action value based on function call action #}

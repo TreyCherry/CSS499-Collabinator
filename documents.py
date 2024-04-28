@@ -8,9 +8,9 @@ from .db import (
     get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
-    add_comment, get_comments, get_comment, add_response,
+    add_comment, get_comments, get_comment, add_response, clear_doc_reviewers,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
-    check_all_resolved, check_new_responses
+    check_all_resolved, check_new_responses, resolve_all
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -217,7 +217,7 @@ def viewDocument():
                     return redirect(link)
                     
                 docName = doc["document_name"]
-                remove_doc(doc, docID, docName)
+                remove_doc(docID, docName)
                 
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
@@ -233,7 +233,7 @@ def viewDocument():
                 flash("Document review started!")
                 return redirect(url_for('index'))
             case "comment":
-                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #if user is not reviewer
+                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -244,10 +244,28 @@ def viewDocument():
                     flash("Comment cannot be empty!")
                     return redirect(link)
                 
-
                 flash("Comment added!")
                 return redirect(link)
+            case "close comments on": #writing it this way is easier for the confirm function
+                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate >= 8:
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                
+                close_comments(doc, docID, link)
+                
+                flash("Comments closed!")
+                return redirect(link)
+            case "close review for":
+                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 9:
+                    flash("You do not have permission to do that.")
+                    return redirect(link)
+                
+                close_review(doc, docID, link)
+
+                flash("Review closed!")
+                return redirect(url_for('index'))
             case _:
+                flash("Invalid action.")
                 return redirect(link)
 
     return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
@@ -270,10 +288,11 @@ def reject_doc(doc, docID):
     message = make_alert_message("doc_rejected", document_name=docName) #create an alert message
     add_alert_by_id(doc['author_id'], message) #alert the author
 
-def remove_doc(doc, docID, docName):
-    remove_document(docID) #remove the document
+def remove_doc(docID, docName):
     message = make_alert_message("doc_removed", document_name=docName) #create an alert message
-    add_alert_by_id(doc["author_id"], message) #alert the author
+    add_alert_by_doc_reviewers(docID, message) #alert the reviewers
+    clear_doc_reviewers(docID) #clear any reviewers from the list
+    remove_document(docID) #remove the document
 
 def mark_doc_review(doc, docID, docstate, link):
     userIDs = request.form.getlist("reviewerIDs") #get user ids that were checked
@@ -290,3 +309,15 @@ def upload_comment(doc, docID, docstate, comment, link): #upload a comment
     add_alert_by_doc_reviewers(docID, message, link)
     if docstate != 5:
         set_doc_state(docID, 5) #set the state of the document to comments added
+
+def close_comments(doc, docID, link):
+    resolve_all(docID)
+    set_doc_state(docID, 8)
+    message = make_alert_message("comments_closed", document_name=doc["document_name"])
+    add_alert_by_doc_reviewers(docID, message, link)
+
+def close_review(doc, docID, link):
+    set_doc_state(docID, 9)
+    message = make_alert_message("review_closed", document_name=doc["document_name"])
+    add_alert_by_doc_reviewers(docID, message, link)
+    clear_doc_reviewers(docID)

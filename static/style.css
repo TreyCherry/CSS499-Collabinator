@@ -94,7 +94,8 @@ button:disabled {
 	margin: 0 1rem;
 }
 .big::before {
-	width: 1.4rem;
+	width: 1.8rem;
+	text-align: center;
 	display: inline-block;
 }
 .big.min-icon {
@@ -112,7 +113,6 @@ button:disabled {
 	background-color: var(--dark-purple);
 	filter: brightness(0.9);
 	border-radius: 5px;
-	min-height: 20rem;
 }
 .right-box i {
 	display: block;
