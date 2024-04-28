@@ -248,7 +248,7 @@ def viewDocument():
 
                 return redirect(url_for('index'))
             case "comment":
-                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
+                if docstate <= 3 or docstate > 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -262,7 +262,7 @@ def viewDocument():
                 flash("Comment added!")
                 return redirect(link)
             case "close comments on": #writing it this way is easier for the confirm function
-                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate >= 8:
+                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate > 8:
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -271,7 +271,7 @@ def viewDocument():
                 flash("Comments closed!")
                 return redirect(link)
             case "close review for":
-                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 9:
+                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 10:
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -327,12 +327,12 @@ def upload_comment(doc, docID, docstate, comment, link): #upload a comment
 
 def close_comments(doc, docID, link):
     resolve_all(docID)
-    set_doc_state(docID, 8)
+    set_doc_state(docID, 9)
     message = make_alert_message("comments_closed", document_name=doc["document_name"])
     add_alert_by_doc_reviewers(docID, message, link)
 
 def close_review(doc, docID, link):
-    set_doc_state(docID, 9)
+    set_doc_state(docID, 10)
     message = make_alert_message("review_closed", document_name=doc["document_name"])
     add_alert_by_doc_reviewers(docID, message, link)
     clear_doc_reviewers(docID)

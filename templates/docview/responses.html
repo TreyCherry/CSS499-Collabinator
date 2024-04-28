@@ -36,7 +36,7 @@
                 {% endfor %}
             {% endif %}
         </div>
-        {% if check_doc_reviewer(comment['document_id'], g.user['user_id']) and check_state(g.stateint, 5) and comment['resolved'] < 2 and docstate < 8 %}
+        {% if check_doc_reviewer(comment['document_id'], g.user['user_id']) and check_state(g.stateint, 5) and comment['resolved'] < 2 and docstate < 9 %}
         <form method="post">
                 <div class="comment-container reply-container">
                     <textarea class="comment-input" placeholder="Add a response" name="response"></textarea>

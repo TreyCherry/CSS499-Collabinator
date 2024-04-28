@@ -34,9 +34,9 @@ STATES = [
     State(5, "Respond", "Comments to View", "Respond to Comments"),
     State(6, "Resolve", "New Responses to Comments", "Resolve Comments"),
     State(7, "Upload Update", "Resolved", "Upload Updates to Documents"),
-    State(8, "Close Comments", "Comments Closed", "Close Comments"),
-    State(9, "Close Review", "Review Closed", "Close Document Review"),
-    State(10, "Manage Users", "none", "Manage Users")
+    State(8, "Close Comments", "Document Updated", "Close Comments"),
+    State(9, "Close Review", "Comments Closed", "Close Document Review"),
+    State(10, "Manage Users", "Review Closed", "Manage Users")
 ]
 
 ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'} #this constant is used to determine if a file is allowed to be uploaded by its extension
