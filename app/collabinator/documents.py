@@ -124,6 +124,9 @@ def viewResponses():
         return redirect(url_for('index'))
     
     comment = get_comment(commentID)
+    if comment is None:
+        flash("Comment not found")
+        return redirect(url_for('index'))
     docID = comment['document_id']
     doc = get_doc_by_id(docID)
     if doc is None:
