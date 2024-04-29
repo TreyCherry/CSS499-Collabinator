@@ -36,12 +36,15 @@ def register():
             else: #in try/except blocks else just runs if no exception 
                 flash("Account created successfully. Please log in.")
                 
+                userID = get_user_by_email(request.form["email"])["user_id"] #get id of user from db
+                link = url_for("members") + "?select=" + str(userID) #create link to members page with user id as query param
+
                 from .alerts import make_alert_message
                 #send alert to managers
                 message = make_alert_message("new_user", email=request.form["email"])  # Create alert message
                 roles = get_roles_by_states(10)  # Fetch all users with role 10
                 for role in roles:
-                    add_alert_by_role(role["role_id"], message=message)  # Send alert to each manager
+                    add_alert_by_role(role["role_id"], message, link)  # Send alert to each manager
 
                 return redirect(url_for("auth.login")) #redirect to login       
         flash(error) #flash error message

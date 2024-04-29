@@ -38,9 +38,15 @@
 {% endblock %}
 <script>
     {% block scripts %}
-        function editMember(id) { {# id is input for each row by jinja in the table row's onclick method #}
-            document.getElementById("member-select-value").value = id; {# hidden input for storing the id of the target user to edit #}
-            document.getElementById("member-select-form").submit(); {# submit the form to edit the target user #}
+        {% if request.args.get("select") %} //{# if get var "select" is set then run editMember on the id specified #}
+            window.addEventListener("load", () => { //on window load
+                editMember({{ request.args.get("select") }}); //edit member
+            });
+        {% endif %}
+
+        function editMember(id) { //{# id is input for each row by jinja in the table row's onclick method #}
+            document.getElementById("member-select-value").value = id; //{# hidden input for storing the id of the target user to edit #}
+            document.getElementById("member-select-form").submit(); //{# submit the form to edit the target user #}
         }
     {% endblock %}
 </script>
