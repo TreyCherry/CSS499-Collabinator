@@ -81,7 +81,7 @@ def upload_file(file, author_id, existingDoc=None): #handle uploading a file fro
         if type == 2: #file needs to be converted. use libreoffice to do so
             outroute = current_app.config['UPLOAD_FOLDER'] #format file output path string
             fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
-            subprocess.run(f'libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
+            subprocess.run(f'export HOME=/tmp && libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
 
             os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
     except:

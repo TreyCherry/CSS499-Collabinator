@@ -18,7 +18,6 @@ RUN rm -r /root/.cache
 
 COPY server-conf/nginx.conf /etc/nginx/
 COPY server-conf/flask-site-nginx.conf /etc/nginx/conf.d/
-#COPY server-conf/default-sites /etc/nginx/sites-available/default
 COPY server-conf/uwsgi.ini /etc/uwsgi/
 COPY server-conf/supervisord.conf /etc/
 
@@ -27,7 +26,8 @@ WORKDIR /app
 
 RUN python -m flask --app collabinator init-db
 
-#CMD [ "python3", "-m" , "flask", "--app", "flask-app", "run", "--host=0.0.0.0"]
+RUN chown -R nginx:nginx /app/instance
+
 CMD ["/usr/bin/supervisord"]
 
 EXPOSE 8082
