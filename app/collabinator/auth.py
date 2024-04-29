@@ -78,12 +78,16 @@ def login():
 def load_logged_in_user(): #set the global user variable if a user is logged in
     user_id = session.get('user_id') #get user_id from session variable (stored in login)
 
-    if user_id is None: #if no user is logged in
+    if user_id is None or user_id == 2: #if no user is logged in (or deleted user)
         g.user = None #set global user var to None
         g.stateint = None
     else:
-        g.user = get_user_by_id(user_id) #if user is logged in store the user info in the global user var
-        g.stateint = get_role(g.user["role_id"])["allowed_states"] #store their allowed states in global stateint
+        try:
+            g.user = get_user_by_id(user_id) #if user is logged in store the user info in the global user var
+            g.stateint = get_role(g.user["role_id"])["allowed_states"] #store their allowed states in global stateint
+        except:
+            g.user = None
+            g.stateint = None
 
     check_activity()
 

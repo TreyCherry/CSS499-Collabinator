@@ -144,6 +144,8 @@ def remove_document(id): #remove a document by id
         os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
     except:
         flash("Could not find file to remove")
+    clear_comments(id) #clear comments on doc
+    clear_doc_reviewers(id) #clear doc reviewers
     db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
     db.commit() #commit the update
 
@@ -216,6 +218,19 @@ def check_new_responses(doc_id): #check if there are any new responses
 def get_comment(comment_id): #get a single comment by id
     db = get_db()
     return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
+
+def clear_comments(doc_id): #clear all comments on a document
+    db = get_db()
+    clear_responses(db, doc_id)
+    db.execute('DELETE FROM Comments WHERE document_id = ?', (doc_id,))
+    db.commit()
+
+def clear_responses(db, doc_id): #clear all responses to a comment
+    comments = get_comments(doc_id)
+    for comment in comments:
+        comment_id = comment['comment_id']
+        db.execute('DELETE FROM Responses WHERE comment_id = ?', (comment_id,))
+        db.commit()
 
 def add_response(comment_id, author_id, response):
     db = get_db()
@@ -348,6 +363,7 @@ def init_db(): #initialize database to default values, deleting old information 
     date_registered = new_date() #get date integer from current time
 
     add_user(email, password, role_id, first_name, last_name, date_registered) #add admin user to database
+    add_user("none", "none", 2, "Deleted User", "", 0) #hidden user to be displayed when a user is removed
 
 @click.command('init-db') #add init_db function as a command to be run in terminal with init-db
 def init_db_command():
@@ -371,11 +387,20 @@ def get_user_by_email(email: str): #search database for user by email
     db = get_db()
     return db.execute('SELECT * FROM Users WHERE email = ?', (email.lower(),)).fetchone() #get one user
 
-def get_users(role=None): #get all users in database
+def get_users(role=None, excludeHidden=True): #get all users in database
     db = get_db()
-    query = 'SELECT * FROM Users' #initial query
+    query = 'SELECT * FROM Users' #initial query excluding hidden user
+    condition = ''
+    if excludeHidden:
+        condition = 'user_id != 2' #exclude hidden user
     if role is not None:
-        query += ' WHERE role_id = ' + str(role) #add where clause
+        if condition != '':
+            condition += ' AND '
+        condition += 'role_id = ' + str(role) #add role filter
+    
+    if condition != '':
+        query += ' WHERE ' + condition
+
     return db.execute(query).fetchall()
 
 def add_user(email: str, password, role_id, first_name: str, last_name: str, date_registered): #add a user to database
@@ -440,6 +465,10 @@ def update_activity(user_id): #reset last active time to current time
 
 def remove_user(user_id): #remove user by their id
     db = get_db()
+    db.execute('UPDATE Responses SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all responses by this user to be by deleted user
+    db.execute('UPDATE Comments SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all comments by this user to be by deleted user
+    db.execute('UPDATE Documents SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all documents by this user to be by deleted user
+    db.execute('DELETE FROM DocReviewers WHERE reviewer_id = ?', (user_id,)) #delete all keys in docReviewers
     db.execute('DELETE FROM Users WHERE user_id = ?', (user_id,)) #delete user
     db.commit() #commit to db
 

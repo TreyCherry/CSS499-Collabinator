@@ -7,7 +7,7 @@ def create_app():
     #instantiate the flask app
 
     app.config.from_mapping(
-        SECRET_KEY='dev',
+        SECRET_KEY='091959f559dd2b83ca2a22bf67709c3d26d04b90585c699b231f96549f08d9e7',
         DATABASE=os.path.join(app.instance_path, 'collabinator.sqlite'),
         UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents'),
         MAX_CONTENT_LENGTH = 4 * 1024 * 1024 #max file upload size 4MB

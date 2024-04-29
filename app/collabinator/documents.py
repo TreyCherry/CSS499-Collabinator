@@ -5,12 +5,13 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from .db import (
-    get_db, check_state, upload_file, get_documents, STATES, get_user_by_id,
+    check_state, upload_file, get_documents, STATES, get_user_by_id,
     get_doc_by_id, get_filename, set_doc_state, add_alert_by_id, add_alert_by_role,
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
     add_comment, get_comments, get_comment, add_response, clear_doc_reviewers,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
-    check_all_resolved, check_new_responses, resolve_all, get_doc_reviewers
+    check_all_resolved, check_new_responses, resolve_all, get_doc_reviewers,
+    clear_comments
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -75,6 +76,9 @@ def update():
             flash("No document specified.") #if no document is specified say this
         return redirect(url_for('index'))
     doc = get_doc_by_id(docID)
+    if doc is None:
+        flash("Document not found.")
+        return redirect(url_for('index'))
     docName = doc["document_name"]
 
     if request.method == 'POST':
@@ -120,10 +124,16 @@ def viewResponses():
         return redirect(url_for('index'))
     
     comment = get_comment(commentID)
+    if comment is None:
+        flash("Comment not found")
+        return redirect(url_for('index'))
     docID = comment['document_id']
     doc = get_doc_by_id(docID)
+    if doc is None:
+        flash("Document not found")
+        return redirect(url_for('index'))
     docstate = doc["state_id"]
-    users = get_users()
+    users = get_users(excludeHidden=False)
     link = url_for('docs.viewResponses') + "?commentID=" + commentID
 
     if request.method == 'POST':
@@ -331,7 +341,6 @@ def reject_doc(doc, docID):
 def remove_doc(docID, docName):
     message = make_alert_message("doc_removed", document_name=docName) #create an alert message
     add_alert_by_doc_reviewers(docID, message) #alert the reviewers
-    clear_doc_reviewers(docID) #clear any reviewers from the list
     remove_document(docID) #remove the document
 
 def mark_doc_review(doc, docID, docstate, link):
