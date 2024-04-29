@@ -97,8 +97,10 @@ def get_name_type(filename): #get both name without extension and 2 value file t
     name, ext = filename.rsplit('.', 1) #split filename by last '.'
     if ext == 'txt':
         type = 0 # 0 is txt
-    else:
+    elif ext == 'pdf':
         type = 1 # 1 is pdf
+    else:
+        type = 2 # 2 is other extension
     return name, type #return both
 
 def get_filename(doc): #get file name and type from returned database row of document
