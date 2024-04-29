@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, flash, redirect, url_for
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -57,5 +57,10 @@ def create_app():
     @app.route('/favicon.ico') #set the icon to be used in the browser
     def favicon():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+    @app.errorhandler(413)
+    def file_too_large(error):
+        flash("File too large. Maximum file size is 20MB.")
+        return redirect(url_for('index'))
 
     return app

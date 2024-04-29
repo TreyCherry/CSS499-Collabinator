@@ -10,7 +10,7 @@
     <label for="role_id">Role: </label>
     <select name="role_id"> {# drop down for role select #}
         {% for role in roles %} {# fill the options with the list of roles #}
-            <option value="{{role['role_id']}}" {% if member and role["role_id"] == member["role_id"]%}selected{% endif %}>{{role["role_name"]}}</option> {# if the target user has this role then mark it as selected #}
+            <option {% if role["description"] %}title="{{role['description']}}"{% else %}title="No Description"{% endif %} value="{{role['role_id']}}" {% if member and role["role_id"] == member["role_id"]%}selected{% endif %}>{{role["role_name"]}}</option> {# if the target user has this role then mark it as selected #}
         {% endfor %}
     </select>
 {% endblock %}
