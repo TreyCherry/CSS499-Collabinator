@@ -3,9 +3,13 @@
     {% if bodytype == 2 and check_state(g.stateint, 2)%}
         {% set header = "Document Awaiting Approval" %}
     {% elif check_state(g.stateint, 3) %}
-        {% set header = "Select Reviewers for Document" %}
+        {% if bodytype == 3 %}
+            {% set header = "Select Reviewers for Document" %}
+        {% else %}
+            {% set header = "Add Reviewers to Document" %}
+        {% endif %}
     {% endif %}
-    {% if bodytype != 9 %}
+    {% if header and bodytype != 10 %}
         <div class="top-box">
             <span id="unhide" {% if bodytype <= 3 %}class="hidden"{% endif %}>{{ header }}</span>
             <div id="hide-box" {% if bodytype > 3 %}class="hidden"{% endif %}>
@@ -30,7 +34,7 @@
                                             <td>{{ roles[reviewer['role_id'] | string] }}</td>
                                             <td>
                                                 <div class="checkbox">
-                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}">
+                                                    <input type="checkbox" name="reviewerIDs" value="{{ reviewer['user_id'] }}" {% if check_doc_reviewer(request.args['docID'], reviewer['user_id']) %}checked disabled{% endif %}>
                                                     <span class="checkmark" onclick="toggleCheck(this)"></span>
                                                 </div>
                                             </td>
@@ -61,14 +65,18 @@
 
 {% block content %}
     <div class="relative-container">
-        <div class="right-box">
-            <i class="click-icon fa-regular fa-trash-can big {% if docstate == 2 or not check_state(g.stateint, 2) %}disabled{% endif %}" onclick="setAction(this, 'remove')"></i>
-            <i class="click-icon fa-solid fa-arrow-up-from-bracket big {% if not check_state(g.stateint, 7) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'update')"></i>
-            <i class="click-icon fa-regular fa-comment big {% if docstate < 4 %}disabled{% endif %}" onclick="toggleComments()"></i>
-            <i class="click-icon fa-solid fa-comment-slash big {% if not isreviewer or not check_state(g.stateint, 8) or docstate >= 8 %}disabled{% endif %}" onclick="setAction(this, 'close comments on')"></i>
-            <i class="click-icon fa-regular fa-file-excel big {% if not isreviewer or not check_state(g.stateint, 9) or docstate == 9 %}disabled{% endif %}" onclick="setAction(this, 'close review for')"></i>
+        <div class="docview">
+            {% if isreviewer %}<h4>You have permission to take review steps on this document.</h4>{% endif %}
+            {% if docstate == 10 %}<h4>Review for this Document is now Closed.</h4>{% endif %}
+            <div class="right-box">
+                <i class="click-icon fa-regular fa-trash-can big {% if docstate == 2 or not check_state(g.stateint, 2) %}disabled{% endif %}" onclick="setAction(this, 'remove')"></i>
+                <i class="click-icon fa-solid fa-arrow-up-from-bracket big {% if not check_state(g.stateint, 7) or not isreviewer %}disabled{% endif %}" {% if isreviewer and check_state(g.stateint, 7) %}onclick="window.location.href='{{ url_for('docs.update') }}?docID=' + {{ request.args['docID'] }}"{% endif %}></i>
+                <i class="click-icon fa-regular fa-comment big {% if docstate < 4 %}disabled{% endif %}" onclick="toggleComments()"></i>
+                <i class="click-icon fa-solid fa-comment-slash big {% if not isreviewer or not check_state(g.stateint, 8) or docstate > 8 %}disabled{% endif %}" onclick="setAction(this, 'close comments on')"></i>
+                <i class="click-icon fa-regular fa-file-excel big {% if not isreviewer or not check_state(g.stateint, 9) or docstate == 10 %}disabled{% endif %}" onclick="setAction(this, 'close review for')"></i>
+            </div>
+            <iframe src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
         </div>
-        <iframe class="docview" src="{{ url_for('docs.viewer') }}?filename={{ filename }}"></iframe> {# iframe to display document #}
     </div>
     <div id="comments" class="bottom-box hidden">
         <i class="min-icon fa-solid fa-xmark big corner" onclick="toggleComments()"></i>
@@ -82,13 +90,15 @@
         <h2>Comments</h2>
         {% if docstate == 7 %}
         <span>All current comments have been resolved.</span>
+        {% elif docstate >= 9 %}
+        <span>Comments are now Closed.</span>
         {% endif %}
         <div class="comment-section">
             <div class="comment-box">
                 {% if comments %}
                     {% for comment in comments %}
-                        <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %} {% if comment['resolved'] == 1 %}resolved{% endif %}">
-                            <span>Posted {{ date_concise(comment["date_created"]) }}{% if comment['resolved'] == 1 %} - <b>Resolved</b>{% endif %}</span>
+                        <div class="comment-wrapper {% if comment['author_id'] == g.user['user_id'] %}to-comment{% else %}from-comment{% endif %} {% if comment['resolved'] == 2 %}resolved{% endif %}">
+                            <span>Posted {{ date_concise(comment["date_created"]) }}{% if comment['resolved'] == 2 %} - <b>Resolved</b>{% elif comment['resolved'] == 1 %} - <b>Responses</b> {% endif %}</span>
                             <div class="relative-container">
                                 <i class="min-icon fa-regular fa-comment-dots" onclick="goToCommentReplies({{ comment['comment_id'] }})"></i>
                                 <h3>{{ usernames[comment["author_id"]|string] }}</h3>
@@ -102,7 +112,7 @@
                     <p>No comments have been made yet.</p>
                 {% endif %}
             </div>
-            {% if docstate < 8 and isreviewer and check_state(g.stateint, 4) %}
+            {% if docstate < 9 and isreviewer and check_state(g.stateint, 4) %}
                 <form method="post" onsubmit="event.preventDefault()">
                     <div class="comment-container">
                         <textarea class="comment-input" placeholder="Add a comment" name="comment"></textarea>

@@ -10,7 +10,7 @@ from .db import (
     get_roles_by_states, remove_document, get_users, add_doc_reviewer, check_doc_reviewer,
     add_comment, get_comments, get_comment, add_response, clear_doc_reviewers,
     get_doc_by_name, get_responses, mark_resolved, add_alert_by_doc_reviewers,
-    check_all_resolved, check_new_responses, resolve_all
+    check_all_resolved, check_new_responses, resolve_all, get_doc_reviewers
 )
 from .auth import login_required
 from .alerts import make_alert_message
@@ -23,7 +23,11 @@ def index():
     docList = None #initialize doclist to None for checking in index.html
     authors = {} #set authors to an empty dictionary
     if check_state(g.stateint, 0): #check if user has read permissions
-        docList = get_documents()
+        if check_state(g.stateint, 2): #if moderator show all docs
+            docList = get_documents()
+        else:
+            docList = get_documents(author_id=g.user["user_id"], min_state_id=3) #if not only show approved docs
+
         if docList is not None:
             for doc in docList:
                 user = get_user_by_id(doc["author_id"]) #get author info from db
@@ -46,16 +50,47 @@ def addDocument():
         file = request.files['file'] #get the file from the request
         docName = upload_file(file, g.user["user_id"]) #upload_file uploads the file to the server and returns true if it succeeds false otherwise
         if docName is not None:
-            message = make_alert_message("doc_upload", document_name=docName) #create an alert messages
+            link = url_for('docs.viewDocument') + "?docID=" + str(get_doc_by_name(docName)["document_id"])
+            message = make_alert_message("your_doc_upload", document_name=docName) #create an alert messages
+            add_alert_by_id(g.user["user_id"], message, link)
+
+            message = make_alert_message("doc_upload", document_name=docName, user_name=g.user["first_name"]) #create an alert messages
             roles = get_roles_by_states(2) #get the roles that have approve permissions
             for role in roles:
-                add_alert_by_role(role["role_id"], message, url_for('docs.viewDocument') + "?docID=" + str(get_doc_by_name(docName)["document_id"]))
+                add_alert_by_role(role["role_id"], message, link)
             flash("Upload successful!")
             return redirect(url_for('index')) #if it uploaded successfully take us back to homepage
         
-        
 
     return render_template('docview/addDocument.html', activeNav="docs") #render the html page for uploading a document
+
+@bp2.route('/update', methods=('GET', 'POST'))
+@login_required
+def update():
+    docID = request.args.get("docID") #check for docID in the url
+    if not check_state(g.stateint, 7) or docID is None or not check_doc_reviewer(docID, g.user["user_id"]):
+        if docID is not None: #run checks
+            flash("You are not allowed to do that.") #if user doesnt have permission say this
+        else:
+            flash("No document specified.") #if no document is specified say this
+        return redirect(url_for('index'))
+    doc = get_doc_by_id(docID)
+    docName = doc["document_name"]
+
+    if request.method == 'POST':
+        if 'file' not in request.files: #check if file is in request
+            flash("No file part.")
+            return redirect(request.url)
+        file = request.files['file']
+        docName = upload_file(file, g.user["user_id"], doc)
+        if docName is not None:
+            link = url_for('docs.viewDocument') + "?docID=" + str(docID)
+            message = make_alert_message("doc_updated", document_name=docName)
+            add_alert_by_doc_reviewers(docID, message, link)
+            flash("Upload successful!")
+            return redirect(link)
+    
+    return render_template('docview/updateDocument.html', docName=docName, activeNav="docs")
 
 @bp2.route('/viewer') #this is used for displaying the file itself. Best to call this in an iframe on another page than to go to it directly
 @login_required
@@ -94,11 +129,11 @@ def viewResponses():
     if request.method == 'POST':
         resolveButton = request.form.get("resolve")
         if resolveButton is not None:
-            if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 6):
+            if comment['resolved'] == 2 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 6):
                 flash("You are not allowed to do that")
                 return redirect(link)
             
-            mark_resolved(commentID)
+            mark_resolved(commentID, 2)
             comtext = "%.10s" % comment['comment']
             if comtext != comment['comment']:
                 comtext += "..."
@@ -114,7 +149,7 @@ def viewResponses():
 
             return redirect(docLink)
 
-        if comment['resolved'] == 1 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 5):
+        if comment['resolved'] == 2 or not check_doc_reviewer(docID, g.user['user_id']) or not check_state(g.stateint, 5):
             flash("Unable to add response")
             return redirect(link)
         
@@ -127,6 +162,9 @@ def viewResponses():
         message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=doc["document_name"])
         
         add_alert_by_doc_reviewers(docID, message, link)
+
+        if comment["resolved"] != 1: #if comment not already marked as replied, mark it
+            mark_resolved(commentID, 1)
 
         if docstate != 6: #update doc to stage 6 if it needs it
             set_doc_state(docID, 6)
@@ -161,11 +199,11 @@ def viewDocument():
     isAuthor = doc["author_id"] == g.user["user_id"]
     filename = get_filename(doc) #get the full filename of the document
     
-    if not isAuthor:
-        if not check_state(g.stateint, 2): #check if document is in review stage
-            if docstate <= 3 and not check_state(g.stateint, 3): #check if document is in review stage
-                return redirect(url_for('index')) #if user does not have mark for review role then redirect 
+    if not isAuthor and not check_state(g.stateint, 2) and docstate < 3: #check if document is in review stage
+            return redirect(url_for('index')) #if user does not have mark for review role then redirect 
         
+
+    selectedReviewers = get_doc_reviewers(docID)
     reviewers = None
     roleNames = None
     if docstate >= 3:
@@ -200,7 +238,7 @@ def viewDocument():
                 approve_doc(doc, docID, docAuthor, link) #approve the document
                 
                 flash("Document approved!")
-                return redirect(url_for('index'))
+                return redirect(link)
             case "reject":
                 if docstate != 2 or not check_state(g.stateint, 2): #if user is approver
                     flash("You do not have permission to do that.")
@@ -221,8 +259,6 @@ def viewDocument():
                 
                 flash(f"Document \"{docName}\" successfully removed.")
                 return redirect(url_for('index')) #go back to home page
-            case "update":
-                pass
             case "markreview":
                 if docstate < 3 or not check_state(g.stateint, 3): #if user is not reviewer
                     flash("You do not have permission to do that.")
@@ -230,10 +266,14 @@ def viewDocument():
                 
                 mark_doc_review(doc, docID, docstate, link) #mark the document for review
 
-                flash("Document review started!")
-                return redirect(url_for('index'))
+                if len(selectedReviewers) > 0: #check if adding new members or not
+                    flash("Document review updated!")
+                else:
+                    flash("Document review started!")
+
+                return redirect(link)
             case "comment":
-                if docstate <= 3 or docstate >= 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
+                if docstate <= 3 or docstate > 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -247,7 +287,7 @@ def viewDocument():
                 flash("Comment added!")
                 return redirect(link)
             case "close comments on": #writing it this way is easier for the confirm function
-                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate >= 8:
+                if not check_state(g.stateint, 8) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate > 8:
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
@@ -256,19 +296,19 @@ def viewDocument():
                 flash("Comments closed!")
                 return redirect(link)
             case "close review for":
-                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 9:
+                if not check_state(g.stateint, 9) or not check_doc_reviewer(docID, g.user["user_id"]) or docstate == 10:
                     flash("You do not have permission to do that.")
                     return redirect(link)
                 
                 close_review(doc, docID, link)
 
                 flash("Review closed!")
-                return redirect(url_for('index'))
+                return redirect(link)
             case _:
                 flash("Invalid action.")
                 return redirect(link)
 
-    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
+    return render_template('docview/viewDocument.html', activeNav="docs", filename=filename, docstate=docstate, reviewers=reviewers, selectedReviewers=selectedReviewers, roles=roleNames, comments=comments, usernames=usernames) #render the html page with the filename passed to it
 
 def approve_doc(doc, docID, docAuthor, link):
     set_doc_state(docID, 3) #set the state of the document to ready to select reviewers
@@ -312,12 +352,12 @@ def upload_comment(doc, docID, docstate, comment, link): #upload a comment
 
 def close_comments(doc, docID, link):
     resolve_all(docID)
-    set_doc_state(docID, 8)
+    set_doc_state(docID, 9)
     message = make_alert_message("comments_closed", document_name=doc["document_name"])
     add_alert_by_doc_reviewers(docID, message, link)
 
 def close_review(doc, docID, link):
-    set_doc_state(docID, 9)
+    set_doc_state(docID, 10)
     message = make_alert_message("review_closed", document_name=doc["document_name"])
     add_alert_by_doc_reviewers(docID, message, link)
     clear_doc_reviewers(docID)

@@ -23,7 +23,9 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
         case "new_user":
             return f"New user created with email: {kwargs['email']}" #for example this one would be make_alert_message("new_user", email="a@a.com")
         case "doc_upload":
-            return f"Document Update: Document \"{kwargs['document_name']}\" uploaded and needs approval."
+            return f"Document Update: {kwargs['user_name']} Document \"{kwargs['document_name']}\" uploaded and needs approval."
+        case "your_doc_upload":
+            return f"Document Update: Document \"{kwargs['document_name']}\" was successfully uploaded and is awaiting approval."
         case "doc_approved":
             return f"Document Update: Document \"{kwargs['document_name']}\" approved for review, take action now to select reviewers."
         case "doc_removed":
@@ -32,6 +34,8 @@ def make_alert_message(message_type, **kwargs): #specify message type and pass a
             return f"Document Update: Document \"{kwargs['document_name']}\" has been rejected and removed from the site."
         case "doc_user_added":
             return f"Document Update: You have been selected to contribute to document review on \"{kwargs['document_name']}\". View the document now."
+        case "doc_updated":
+            return f"Document Update: Document \"{kwargs['document_name']}\" has been updated. Click here to view new document."
         case "new_comment":
             return f"New comment added to document \"{kwargs['document_name']}\". Click to View"
         case "new_response":

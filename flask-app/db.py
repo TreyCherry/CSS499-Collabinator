@@ -36,9 +36,9 @@ STATES = [
     State(5, "Respond", "Comments to View", "Respond to Comments"),
     State(6, "Resolve", "New Responses to Comments", "Resolve Comments"),
     State(7, "Upload Update", "Resolved", "Upload Updates to Documents"),
-    State(8, "Close Comments", "Comments Closed", "Close Comments"),
-    State(9, "Close Review", "Review Closed", "Close Document Review"),
-    State(10, "Manage Users", "none", "Manage Users")
+    State(8, "Close Comments", "Document Updated", "Close Comments"),
+    State(9, "Close Review", "Comments Closed", "Close Document Review"),
+    State(10, "Manage Users", "Review Closed", "Manage Users")
 ]
 
 ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'} #this constant is used to determine if a file is allowed to be uploaded by its extension
@@ -47,7 +47,7 @@ def allowed_file(filename): #checks a string filename for if it is in the allowe
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def upload_file(file, author_id): #handle uploading a file from file input
+def upload_file(file, author_id, existingDoc=None): #handle uploading a file from file input
     if file.filename == '': #if no file is input this will be blank
         flash('No selected file') #set error message and return false
         return None #false returns when failed to upload file, true if succeeds
@@ -57,7 +57,17 @@ def upload_file(file, author_id): #handle uploading a file from file input
     filename = secure_filename(file.filename) #secure filename removes potentially dangerous characters
 
     name, type = get_name_type(filename) #get name and type of file
-    if (get_doc_by_name(name) is not None): #check if document already has this name in database
+    if (existingDoc != None): #if existingName is set then use it
+        name = existingDoc["document_name"] #set name and filename to existing values
+        ext = filename.rsplit('.', 1)[1].lower()
+        filename = get_filename(existingDoc)
+        try:
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+        except:
+            flash("Old file failed to remove")
+        filename = name + '.' + ext
+
+    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database
         flash('Document already exists')
         return None
     
@@ -77,8 +87,10 @@ def upload_file(file, author_id): #handle uploading a file from file input
     except:
         flash('File could not be saved')
         return None
-    
-    update_document(name, type, author_id) #update document will add a new document or update an existing one
+    if (existingDoc is None):
+        update_document(name, type, author_id) #update document will add a new document or update an existing one
+    else:
+        update_document(name, type, author_id, existingDoc["document_id"], existingDoc["state_id"]) #update document will add a new document or update an existing one
     return name #file upload succeeded
 
 def get_name_type(filename): #get both name without extension and 2 value file type
@@ -109,31 +121,48 @@ def get_doc_by_id(id): #search database for document by id
         'SELECT * FROM Documents WHERE document_id = ?', (id,)
     ).fetchone() #return one result
 
-def get_documents(): #get all documents in database
+def get_documents(author_id = None, min_state_id = None): #get all documents in database
+    query = 'SELECT * FROM Documents' #initial query
+    addon = ""
+    if min_state_id is not None:
+        addon = 'state_id >= ' + str(min_state_id) #add where clause
+    if author_id is not None:
+        if addon != "":
+            addon += " OR "
+        addon += 'author_id = ' + str(author_id) #add clause for user id
+    if addon != "":
+        query += ' WHERE '
+        query += addon
+    query += ' ORDER BY last_updated DESC' #order by last updated
     db = get_db()
-    return db.execute(
-        'SELECT * FROM Documents ORDER BY last_updated DESC'
-    ).fetchall()
+    return db.execute(query).fetchall() #get all documents that match
 
 def remove_document(id): #remove a document by id
     db = get_db()
     filename = get_filename(get_doc_by_id(id)) #get the filename of the document
-    os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    try:
+        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    except:
+        flash("Could not find file to remove")
     db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
     db.commit() #commit the update
 
-def update_document(name, type, author_id): #update document will add a new document or update an existing one
+def update_document(name, type, author_id, docID=None, docstate=0): #update document will add a new document or update an existing one
     db = get_db()
 
-    existing = get_doc_by_name(name) #search database to see if any documents already have same name
+    if docID is None and get_doc_by_name(name) is not None: #search database to see if any documents already have same name
+        return
+    
+    if docstate < 9:
+        docstate = 8
+        
 
-
-    if existing is None: #if no document with same name insert new document to database
+    if docID is None: #if no document with same name insert new document to database
         query = 'INSERT INTO Documents (document_name, document_type, state_id, author_id, date_created, last_updated) VALUES (?, ?, ?, ?, ?, ?)' 
         values = (name, type, 2, author_id, new_date(), new_date())
     else: #otherwise just update the existing document, replacing the type if necessary
-        query = 'UPDATE Documents SET document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_name = ?'
-        values = (type, 7, author_id, new_date(), name)
+        query = 'UPDATE Documents SET document_name = ?, document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_id = ?'
+        values = (name, type, docstate, author_id, new_date(), docID)
 
     db.execute(query, values) #execute query
     db.commit() #commit the update to the database
@@ -181,11 +210,8 @@ def get_comments(doc_id, resolved=None): #get all comments on document
     return db.execute(query, tuple(values)).fetchall()
 
 def check_new_responses(doc_id): #check if there are any new responses
-    comments = get_comments(doc_id, resolved=0)
-    for comment in comments:
-        if len(get_responses(comment['comment_id'])) > 0:
-            return True
-    return False
+    comments = get_comments(doc_id, resolved=1)
+    return len(comments) > 0
 
 def get_comment(comment_id): #get a single comment by id
     db = get_db()
@@ -201,18 +227,18 @@ def get_responses(comment_id): #get all responses to a comment
     db = get_db()
     return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
 
-def mark_resolved(comment_id): #mark a comment as resolved
+def mark_resolved(comment_id, resolved): #mark a comment as resolved
     db = get_db()
-    db.execute('UPDATE Comments SET resolved = 1 WHERE comment_id = ?', (comment_id,))
+    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
     db.commit()
     
 def check_all_resolved(doc_id): #check if all comments on a document are resolved
     db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved = 0', (doc_id,)).fetchone() is None
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
 
 def resolve_all(doc_id): #resolve all comments on a document
     db = get_db()
-    db.execute('UPDATE Comments SET resolved = 1 WHERE document_id = ?', (doc_id,))
+    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
     db.commit()
 
 def get_states(stateint): #get a list of allowed states based on stateint
