@@ -76,8 +76,21 @@ def update():
         return redirect(url_for('index'))
     doc = get_doc_by_id(docID)
     docName = doc["document_name"]
+
+    if request.method == 'POST':
+        if 'file' not in request.files: #check if file is in request
+            flash("No file part.")
+            return redirect(request.url)
+        file = request.files['file']
+        docName = upload_file(file, g.user["user_id"], doc)
+        if docName is not None:
+            link = url_for('docs.viewDocument') + "?docID=" + str(docID)
+            message = make_alert_message("doc_updated", document_name=docName)
+            add_alert_by_doc_reviewers(docID, message, link)
+            flash("Upload successful!")
+            return redirect(link)
     
-    return render_template('docview/updateDocument.html', docID=docID, docName=docName, activeNav="docs")
+    return render_template('docview/updateDocument.html', docName=docName, activeNav="docs")
 
 @bp2.route('/viewer') #this is used for displaying the file itself. Best to call this in an iframe on another page than to go to it directly
 @login_required

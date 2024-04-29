@@ -45,7 +45,7 @@ def allowed_file(filename): #checks a string filename for if it is in the allowe
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def upload_file(file, author_id): #handle uploading a file from file input
+def upload_file(file, author_id, existingDoc=None): #handle uploading a file from file input
     if file.filename == '': #if no file is input this will be blank
         flash('No selected file') #set error message and return false
         return None #false returns when failed to upload file, true if succeeds
@@ -55,7 +55,17 @@ def upload_file(file, author_id): #handle uploading a file from file input
     filename = secure_filename(file.filename) #secure filename removes potentially dangerous characters
 
     name, type = get_name_type(filename) #get name and type of file
-    if (get_doc_by_name(name) is not None): #check if document already has this name in database
+    if (existingDoc != None): #if existingName is set then use it
+        name = existingDoc["document_name"] #set name and filename to existing values
+        ext = filename.rsplit('.', 1)[1].lower()
+        filename = get_filename(existingDoc)
+        try:
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+        except:
+            flash("Old file failed to remove")
+        filename = name + '.' + ext
+
+    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database
         flash('Document already exists')
         return None
     
@@ -65,7 +75,7 @@ def upload_file(file, author_id): #handle uploading a file from file input
         flash('File could not be saved')
         return None
     
-    update_document(name, type, author_id) #update document will add a new document or update an existing one
+    update_document(name, type, author_id, existingDoc["document_id"]) #update document will add a new document or update an existing one
     return name #file upload succeeded
 
 def get_name_type(filename): #get both name without extension and 2 value file type
@@ -113,22 +123,25 @@ def get_documents(author_id = None, min_state_id = None): #get all documents in 
 def remove_document(id): #remove a document by id
     db = get_db()
     filename = get_filename(get_doc_by_id(id)) #get the filename of the document
-    os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    try:
+        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    except:
+        flash("Could not find file to remove")
     db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
     db.commit() #commit the update
 
-def update_document(name, type, author_id): #update document will add a new document or update an existing one
+def update_document(name, type, author_id, docID=None): #update document will add a new document or update an existing one
     db = get_db()
 
-    existing = get_doc_by_name(name) #search database to see if any documents already have same name
+    if docID is None and get_doc_by_name(name) is not None: #search database to see if any documents already have same name
+        return
 
-
-    if existing is None: #if no document with same name insert new document to database
+    if docID is None: #if no document with same name insert new document to database
         query = 'INSERT INTO Documents (document_name, document_type, state_id, author_id, date_created, last_updated) VALUES (?, ?, ?, ?, ?, ?)' 
         values = (name, type, 2, author_id, new_date(), new_date())
     else: #otherwise just update the existing document, replacing the type if necessary
-        query = 'UPDATE Documents SET document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_name = ?'
-        values = (type, 7, author_id, new_date(), name)
+        query = 'UPDATE Documents SET document_name = ?, document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_id = ?'
+        values = (name, type, 8, author_id, new_date(), docID)
 
     db.execute(query, values) #execute query
     db.commit() #commit the update to the database
