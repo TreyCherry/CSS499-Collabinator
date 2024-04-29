@@ -5,11 +5,11 @@
         {% if g.user is not none%}
         <h1>Documents</h1>
         <div class="top-control">
-            {% if check_state(g.stateint, 1) %} {# if user has upload permissions show add new button #}
+            {% if check_state(g.stateint, 1) and docs|length > 0 %} {# if user has upload permissions show add new button #}
                 <a href="{{ url_for('docs.addDocument') }}"><button>Add New</button></a>
             {% endif %}
         </div>
-            {% if docs is not none %} {# if there are docs show them #}
+            {% if docs is not none and docs|length > 0 %} {# if there are docs show them #}
                 <table class="main-content hover">
                 <thead>
                     <tr> {# table header #}
@@ -35,7 +35,10 @@
                 </tbody>
                 </table>
             {% else %} {# if there are no docs say so #}
-                <h2>No documents found</h2>
+                <h2 class="main-content">No documents found</h2>
+                {% if check_state(g.stateint, 1) %} {# if user has upload permissions show add new button #}
+                    <a href="{{ url_for('docs.addDocument') }}"><button style="margin-bottom: 3rem;" class="fix-size-button">Add New</button></a>
+                {% endif %}
             {% endif %}
         {% else %} {# show this if no user logged in #}
             <h1>{% block fulltitle %}Collabinator{% endblock %}</h1>
