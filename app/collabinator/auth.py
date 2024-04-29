@@ -11,8 +11,6 @@ from .db import (
     update_activity, get_user_by_id, new_date, get_db, date_delta
 )
 
-from alerts import make_alert_message
-
 bp = Blueprint('auth', __name__, url_prefix='/auth') #auth is the name of the blueprint
 
 @bp.route('/register', methods=('GET', 'POST')) #register
@@ -38,6 +36,7 @@ def register():
             else: #in try/except blocks else just runs if no exception 
                 flash("Account created successfully. Please log in.")
                 
+                from .alerts import make_alert_message
                 #send alert to managers
                 message = make_alert_message("new_user", email=request.form["email"])  # Create alert message
                 roles = get_roles_by_states(10)  # Fetch all users with role 10
