@@ -76,6 +76,9 @@ def update():
             flash("No document specified.") #if no document is specified say this
         return redirect(url_for('index'))
     doc = get_doc_by_id(docID)
+    if doc is None:
+        flash("Document not found.")
+        return redirect(url_for('index'))
     docName = doc["document_name"]
 
     if request.method == 'POST':
