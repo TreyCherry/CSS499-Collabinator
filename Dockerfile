@@ -17,5 +17,6 @@ RUN python -m flask --app flask-app init-db
 
 CMD [ "python3", "-m" , "flask", "--app", "flask-app", "run", "--host=0.0.0.0"]
 
+EXPOSE 5000
 
 
