@@ -123,6 +123,9 @@ def viewResponses():
     comment = get_comment(commentID)
     docID = comment['document_id']
     doc = get_doc_by_id(docID)
+    if doc is None:
+        flash("Document not found")
+        return redirect(url_for('index'))
     docstate = doc["state_id"]
     users = get_users(excludeHidden=False)
     link = url_for('docs.viewResponses') + "?commentID=" + commentID
