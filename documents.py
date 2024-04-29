@@ -271,7 +271,7 @@ def viewDocument():
                 else:
                     flash("Document review started!")
 
-                return redirect(url_for('index'))
+                return redirect(link)
             case "comment":
                 if docstate <= 3 or docstate > 8 or not check_doc_reviewer(docID, g.user["user_id"]) or not check_state(g.stateint, 4): #check user allowed to comment
                     flash("You do not have permission to do that.")
@@ -303,7 +303,7 @@ def viewDocument():
                 close_review(doc, docID, link)
 
                 flash("Review closed!")
-                return redirect(url_for('index'))
+                return redirect(link)
             case _:
                 flash("Invalid action.")
                 return redirect(link)
