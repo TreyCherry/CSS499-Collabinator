@@ -7,9 +7,11 @@ from werkzeug.security import check_password_hash
 from werkzeug.exceptions import abort
 
 from .db import (
-    check_state, get_role, add_user, get_user_by_email, 
+    check_state, get_role, add_user, get_user_by_email, get_roles_by_states, add_alert_by_role, 
     update_activity, get_user_by_id, new_date, get_db, date_delta
 )
+
+from alerts import make_alert_message
 
 bp = Blueprint('auth', __name__, url_prefix='/auth') #auth is the name of the blueprint
 
@@ -35,11 +37,16 @@ def register():
                 error = f"User {request.form['email']} is already registered." #set error message
             else: #in try/except blocks else just runs if no exception 
                 flash("Account created successfully. Please log in.")
-                #TODO: alert managers
-                return redirect(url_for("auth.login")) #redirect to login
-            
-        flash(error) #flash error message
+                
+                #send alert to managers
+                message = make_alert_message("new_user", email=request.form["email"])  # Create alert message
+                roles = get_roles_by_states(10)  # Fetch all users with role 10
+                for role in roles:
+                    add_alert_by_role(role["role_id"], message=message)  # Send alert to each manager
 
+                return redirect(url_for("auth.login")) #redirect to login       
+        flash(error) #flash error message
+        
     return render_template("auth/register.html", activeNav="register") #render register template, NOTE: ActiveNav sets which navbar element is highlighted
 
 @bp.route('/login', methods=('GET', 'POST')) #login
