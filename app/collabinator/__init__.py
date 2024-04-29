@@ -2,22 +2,16 @@ import os
 
 from flask import Flask, send_from_directory
 
-def create_app(test_config=None):
+def create_app():
     app = Flask(__name__, instance_relative_config=True)
     #instantiate the flask app
 
     app.config.from_mapping(
         SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'CS499-Collabinator.sqlite'),
-        UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents')
+        DATABASE=os.path.join(app.instance_path, 'collabinator.sqlite'),
+        UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents'),
+        MAX_CONTENT_LENGTH = 4 * 1024 * 1024 #max file upload size 4MB
     )
-    #set config options
-
-    if test_config is None:
-        app.config.from_pyfile('config.py', silent=True)
-
-    else:
-        app.config.from_mapping(test_config)
 
     #make sure the instance folder exists
     try:

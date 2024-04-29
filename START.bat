@@ -1,5 +1,3 @@
 @echo on
 
-docker run --rm -p 5000:5000 collabinator
-
-pause
+docker run --rm -p 8082:8082 collabinator
