@@ -6,7 +6,7 @@ from flask import (
 from werkzeug.security import check_password_hash
 from werkzeug.exceptions import abort
 
-import db
+from . import db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth') #auth is the name of the blueprint
 

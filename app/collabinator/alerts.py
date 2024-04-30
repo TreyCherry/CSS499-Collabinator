@@ -4,9 +4,7 @@ from flask import (
 
 from .auth import login_required
 
-from .db import (
-    get_alerts_by_id
-)
+from .db import get_alerts_by_id
 
 bp = Blueprint('alerts', __name__)  # Setup Blueprint
 
