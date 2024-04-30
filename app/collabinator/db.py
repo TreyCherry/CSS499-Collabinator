@@ -43,293 +43,6 @@ STATES = [
 
 ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'} #this constant is used to determine if a file is allowed to be uploaded by its extension
 
-def allowed_file(filename): #checks a string filename for if it is in the allowed_extensions list
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def upload_file(file, author_id, existingDoc=None): #handle uploading a file from file input
-    if file.filename == '': #if no file is input this will be blank
-        flash('No selected file') #set error message and return false
-        return None #false returns when failed to upload file, true if succeeds
-    if not allowed_file(file.filename): #check if file type is allowed
-        flash('File type not allowed')
-        return None #if not return false
-    filename = secure_filename(file.filename) #secure filename removes potentially dangerous characters
-
-    name, type = get_name_type(filename) #get name and type of file
-    if (existingDoc != None): #if existingName is set then use it
-        name = existingDoc["document_name"] #set name and filename to existing values
-        ext = filename.rsplit('.', 1)[1].lower()
-        filename = get_filename(existingDoc)
-        try:
-            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-        except:
-            flash("Old file failed to remove")
-        filename = name + '.' + ext
-
-    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database
-        flash('Document already exists')
-        return None
-    
-    #enter filetype conversion here. File has been uploaded and type checked. We know it's an accepted type and we know if it already exists. Now see if it needs to be converted
-    #if not type == "txt" or not type == "pdf":
-
-
-    try:
-        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the unconverted file to the configured folder
-    except:
-        flash('File could not be saved')
-        return None
-    
-    if type == 2: #file needs to be converted. use libreoffice to do so
-        outroute = current_app.config['UPLOAD_FOLDER'] #format file output path string
-        fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
-        try:
-            subprocess.run(f'export HOME=/tmp && libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
-        except:
-            flash('File could not be converted')
-            return None
-        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
-    
-    if (existingDoc is None):
-        update_document(name, type, author_id) #update document will add a new document or update an existing one
-    else:
-        update_document(name, type, author_id, existingDoc["document_id"], existingDoc["state_id"]) #update document will add a new document or update an existing one
-    return name #file upload succeeded
-
-def get_name_type(filename): #get both name without extension and 2 value file type
-    name, ext = filename.rsplit('.', 1) #split filename by last '.'
-    if ext == 'txt':
-        type = 0 # 0 is txt
-    elif ext == 'pdf':
-        type = 1 # 1 is pdf
-    else:
-        type = 2 # 2 is other extension
-    return name, type #return both
-
-def get_filename(doc): #get file name and type from returned database row of document
-    name = doc['document_name']
-    type = (doc['document_type'] == 0 and 'txt') or 'pdf'
-
-    return name + '.' + type #return it in usual format
-
-def get_doc_by_name(name): #search database for document by name
-    db = get_db()
-    return db.execute(
-        'SELECT * FROM Documents WHERE document_name = ?', (name,)
-    ).fetchone() #return one result
-
-def get_doc_by_id(id): #search database for document by id
-    db = get_db()
-    return db.execute(
-        'SELECT * FROM Documents WHERE document_id = ?', (id,)
-    ).fetchone() #return one result
-
-def get_documents(author_id = None, min_state_id = None): #get all documents in database
-    query = 'SELECT * FROM Documents' #initial query
-    addon = ""
-    if min_state_id is not None:
-        addon = 'state_id >= ' + str(min_state_id) #add where clause
-    if author_id is not None:
-        if addon != "":
-            addon += " OR "
-        addon += 'author_id = ' + str(author_id) #add clause for user id
-    if addon != "":
-        query += ' WHERE '
-        query += addon
-    query += ' ORDER BY last_updated DESC' #order by last updated
-    db = get_db()
-    return db.execute(query).fetchall() #get all documents that match
-
-def remove_document(id): #remove a document by id
-    db = get_db()
-    filename = get_filename(get_doc_by_id(id)) #get the filename of the document
-    try:
-        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
-    except:
-        flash("Could not find file to remove")
-    clear_comments(id) #clear comments on doc
-    clear_doc_reviewers(id) #clear doc reviewers
-    db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
-    db.commit() #commit the update
-
-def update_document(name, type, author_id, docID=None, docstate=0): #update document will add a new document or update an existing one
-    db = get_db()
-
-    if docID is None and get_doc_by_name(name) is not None: #search database to see if any documents already have same name
-        return
-    
-    if docstate < 9:
-        docstate = 8
-        
-
-    if docID is None: #if no document with same name insert new document to database
-        query = 'INSERT INTO Documents (document_name, document_type, state_id, author_id, date_created, last_updated) VALUES (?, ?, ?, ?, ?, ?)' 
-        values = (name, type, 2, author_id, new_date(), new_date())
-    else: #otherwise just update the existing document, replacing the type if necessary
-        query = 'UPDATE Documents SET document_name = ?, document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_id = ?'
-        values = (name, type, docstate, author_id, new_date(), docID)
-
-    db.execute(query, values) #execute query
-    db.commit() #commit the update to the database
-
-def set_doc_state(doc_id, state_id): #set the state of a document
-    db = get_db()
-    query = 'UPDATE Documents SET state_id = ? WHERE document_id = ?'
-    db.execute(query, (state_id, doc_id))
-    db.commit()
-
-def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
-    if check_doc_reviewer(doc_id, reviewer_id):
-        return
-    db = get_db()
-    db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
-    db.commit()
-
-def check_doc_reviewer(doc_id, reviewer_id): #check if a reviewer is on the list for the document review
-    db = get_db()
-    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ? AND reviewer_id = ?', (doc_id, reviewer_id)).fetchone() is not None
-
-def get_doc_reviewers(doc_id): #get all reviewers for a document
-    db = get_db()
-    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
-
-def clear_doc_reviewers(doc_id): #clear all reviewers for a document
-    db = get_db()
-    db.execute('DELETE FROM DocReviewers WHERE document_id = ?', (doc_id,))
-    db.commit()
-
-def add_comment(doc_id, author_id, comment):
-    db = get_db()
-    now = new_date()
-    db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
-    db.commit()
-
-def get_comments(doc_id, resolved=None): #get all comments on document
-    db = get_db()
-    query = 'SELECT * FROM Comments WHERE document_id = ?'
-    values = [doc_id]
-    if resolved is not None:
-        query += ' AND resolved = ?'
-        values.append(resolved)
-    query += ' ORDER BY date_created'
-    return db.execute(query, tuple(values)).fetchall()
-
-def check_new_responses(doc_id): #check if there are any new responses
-    comments = get_comments(doc_id, resolved=1)
-    return len(comments) > 0
-
-def get_comment(comment_id): #get a single comment by id
-    db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
-
-def clear_comments(doc_id): #clear all comments on a document
-    db = get_db()
-    clear_responses(db, doc_id)
-    db.execute('DELETE FROM Comments WHERE document_id = ?', (doc_id,))
-    db.commit()
-
-def clear_responses(db, doc_id): #clear all responses to a comment
-    comments = get_comments(doc_id)
-    for comment in comments:
-        comment_id = comment['comment_id']
-        db.execute('DELETE FROM Responses WHERE comment_id = ?', (comment_id,))
-        db.commit()
-
-def add_response(comment_id, author_id, response):
-    db = get_db()
-    now = new_date()
-    db.execute('INSERT INTO Responses (comment_id, author_id, response, date_created) VALUES (?, ?, ?, ?)', (comment_id, author_id, response, now))
-    db.commit()
-
-def get_responses(comment_id): #get all responses to a comment
-    db = get_db()
-    return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
-
-def mark_resolved(comment_id, resolved): #mark a comment as resolved
-    db = get_db()
-    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
-    db.commit()
-    
-def check_all_resolved(doc_id): #check if all comments on a document are resolved
-    db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
-
-def resolve_all(doc_id): #resolve all comments on a document
-    db = get_db()
-    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
-    db.commit()
-
-def get_states(stateint): #get a list of allowed states based on stateint
-    states = []
-    i=0
-    while stateint > 0 and i < len(STATES): #repeat until stateint is shifted down to 0 or until there are no more states to check
-        if stateint & 1: # bitwise and 1 checks if bit furthest to right is set
-            states.append(STATES[i]) #if so append state to list
-        stateint = stateint >> 1 #shift bits to the right so that next bit is furthest right
-        i += 1 #increment count by 1
-    return states #return list of states (the dataclass)
-
-def check_state(stateint, id): #check if a specific state is allowed from a stateint
-    try: return bool(stateint >> id & 1) #shift bits to right by id to get index of id to be checked. try statement allows this to be run without knowing if stateint is actually set
-    except: return False
-    
-
-def make_stateint(ids): #take a list of integer ids for states and make a stateint
-    stateint = 0 #start at 0
-    for id in ids: #for each id
-        stateint += 1 << id #add the bit at index of id to stateint
-    return stateint #return final stateint
-
-def flip_states(stateint, ids): #flip the values of the bits of a stateint at the specified ids
-    newstates = make_stateint(ids) #make a new stateint out of the specified ids
-    return stateint ^ newstates #exclusive or flips the bits specified
-
-def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
-    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-
-def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
-    components = []
-    for _ in range(5):
-        components.append(date % 100) #mod 100 gets the last two digits and stores it
-        date = date // 100 #set date int to get rid of last two digits
-    components.append(date) #add the last four digits for the year
-    components.reverse() #reverse the list so that it is in the correct order
-    return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
-
-def date_delta(date):
-    oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100)
-    now = datetime.datetime.now() #get current time for comparison
-    return now - oldDate #return time difference
-
-def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    relativeTime = date_delta(date)
-    
-    if relativeTime.days > 7:
-        datepart = relativeTime.days // 7
-        i = 4
-    elif relativeTime.days > 0:
-        datepart = relativeTime.days
-        i = 3
-    elif relativeTime.seconds > 3600:
-        datepart = relativeTime.seconds // 3600
-        i = 2
-    elif relativeTime.seconds > 60:
-        datepart = relativeTime.seconds // 60
-        i = 1
-    else:
-        datepart = relativeTime.seconds
-        i = 0
-
-    if i==0 and datepart < 10: #if time difference is less than 10 seconds
-        return "Just Now" #say "just now"
-    
-    timeUnits = ["Second", "Minute", "Hour", "Day", "Week"] #list of time units 
-
-    return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
-
-
-
 def get_db(): #get the database connection
     if 'db' not in g: #check if db is already stored
         g.db = sqlite3.connect( #if not connect to it
@@ -367,7 +80,7 @@ def init_db(): #initialize database to default values, deleting old information 
     date_registered = new_date() #get date integer from current time
 
     add_user(email, password, role_id, first_name, last_name, date_registered) #add admin user to database
-    add_user("none", "none", 2, "Deleted User", "", 0) #hidden user to be displayed when a user is removed
+    add_user("none", "none", 2, "Deleted User", "", 0) #add hidden user to be displayed when a user is removed
 
 @click.command('init-db') #add init_db function as a command to be run in terminal with init-db
 def init_db_command():
@@ -377,7 +90,7 @@ def init_db_command():
 
 def init_app(app): #init_app function to be called in __init__.py to ensure database closes when app shuts down and click command is added
     app.teardown_appcontext(close_db)
-    app.cli.add_command(init_db_command)
+    app.cli.add_command(init_db_command) #add init_db_command as a command line option for the app
 
 def get_role(id): #search database for role by id
     db = get_db()
@@ -434,6 +147,296 @@ def update_user(user_id, new_details): #update a user in database, new_details i
     query = "UPDATE Users SET " + columns + " WHERE user_id = ?" #update specified columns where user id matches
     db.execute(query, tuple(values)) #execute query
     db.commit() #commit to db
+
+def allowed_file(filename): #checks a string filename for if it is in the allowed_extensions list
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_file(file, author_id, existingDoc=None): #handle uploading a file from file input
+    if file.filename == '': #if no file is input this will be blank
+        flash('No selected file') #set error message and return false
+        return None #false returns when failed to upload file, true if succeeds
+    if not allowed_file(file.filename): #check if file type is allowed
+        flash('File type not allowed')
+        return None #if not return false
+    filename = secure_filename(file.filename) #secure filename removes potentially dangerous characters
+
+    name, type = get_name_type(filename) #get name and type of file
+    if (existingDoc != None): #if existingName is set then use it
+        name = existingDoc["document_name"] #set name and filename to existing values
+        filename = get_filename(existingDoc)
+        ext = filename.rsplit('.', 1)[1].lower() #keep new uploaded file name extention for use later
+        try:
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #try to remove the old file that it is replacing
+        except:
+            flash("Old file failed to remove") #if it fails to remove flash error
+        filename = name + '.' + ext #set new filename to be the old name with new extension
+
+    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database and its not supposed to
+        flash('Document already exists')
+        return None
+    
+    #enter filetype conversion here. File has been uploaded and type checked. We know it's an accepted type and we know if it already exists. Now see if it needs to be converted
+    #if not type == "txt" or not type == "pdf":
+
+
+    try:
+        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the unconverted file to the configured folder
+    except:
+        flash('File could not be saved') #flash error if fail
+        return None
+    
+    if type == 2: #file needs to be converted. use libreoffice to do so
+        outroute = current_app.config['UPLOAD_FOLDER'] #format file output path string
+        fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
+        try:
+            subprocess.run(f'export HOME=/tmp && libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
+            try:
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
+            except:
+                flash("Old file failed to remove") #if it fails to remove flash error
+        except:
+            flash('File could not be converted') #flash error if fail and quit
+            return None
+    
+    if (existingDoc is None):
+        update_document(name, type, author_id) #update document will add a new document or update an existing one
+    else:
+        update_document(name, type, author_id, existingDoc["document_id"], existingDoc["state_id"]) #update document will add a new document or update an existing one
+    return name #file upload succeeded
+
+def get_name_type(filename): #get both name without extension and 2 value file type
+    name, ext = filename.rsplit('.', 1) #split filename by last '.'
+    if ext == 'txt':
+        type = 0 # 0 is txt
+    elif ext == 'pdf':
+        type = 1 # 1 is pdf
+    else:
+        type = 2 # 2 is other extension
+    return name, type #return both
+
+def get_filename(doc): #get file name and type from returned database row of document
+    name = doc['document_name']
+    type = (doc['document_type'] == 0 and 'txt') or 'pdf' #type extension is txt for 0 and pdf for 1 or 2
+
+    return name + '.' + type #return it in usual format
+
+def get_doc_by_name(name): #search database for document by name
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Documents WHERE document_name = ?', (name,)
+    ).fetchone() #return one result
+
+def get_doc_by_id(id): #search database for document by id
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM Documents WHERE document_id = ?', (id,)
+    ).fetchone() #return one result
+
+def get_documents(author_id = None, min_state_id = None): #get all documents in database with optional filters
+    query = 'SELECT * FROM Documents' #initial query
+    addon = "" #empty addon for filtering
+    if min_state_id is not None: #if a min state id is specified
+        addon = 'state_id >= ' + str(min_state_id) #specify state id must be at least min state
+    if author_id is not None: #if an author id is specified
+        if addon != "": #check if previous filter set already
+            addon += " OR " #if so add OR, as the filters are a whitelist if set (min state id or author of document)
+        addon += 'author_id = ' + str(author_id) #add clause for user id
+    if addon != "": #check if filter set
+        query += ' WHERE ' #add where clause
+        query += addon #add filter
+    query += ' ORDER BY last_updated DESC' #order by last updated
+    db = get_db()
+    return db.execute(query).fetchall() #get all documents that match
+
+def remove_document(id): #remove a document by id
+    db = get_db()
+    filename = get_filename(get_doc_by_id(id)) #get the filename of the document
+    try:
+        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #remove the file from the uploads folder
+    except:
+        flash("Could not find file to remove")
+    clear_comments(id) #clear comments on doc (this also clears responses on the comments)
+    clear_doc_reviewers(id) #clear doc reviewers
+    db.execute('DELETE FROM Documents WHERE document_id = ?', (id,)) #delete the document reference in the db
+    db.commit() #commit the update
+
+def update_document(name, type, author_id, docID=None, docstate=0): #update document will add a new document or update an existing one
+    db = get_db()
+
+    if docID is None and get_doc_by_name(name) is not None: #search database to see if any documents already have same name
+        return #docID being set is the trigger for allowing this to continue even if matching name
+    
+
+    if docID is None: #if not updating existing doc, insert new doc info to db
+        query = 'INSERT INTO Documents (document_name, document_type, state_id, author_id, date_created, last_updated) VALUES (?, ?, ?, ?, ?, ?)' 
+        values = (name, type, 2, author_id, new_date(), new_date())
+    else: #otherwise just update the existing document, replacing the doc type with the new files doc type
+        if docstate < 9: #if document state is not "comments closed"
+            docstate = 8 #set document state to "new update" 
+        query = 'UPDATE Documents SET document_name = ?, document_type = ?, state_id = ?, author_id = ?, last_updated = ? WHERE document_id = ?'
+        values = (name, type, docstate, author_id, new_date(), docID)
+
+    db.execute(query, values) #execute query
+    db.commit() #commit the update to the database
+
+def set_doc_state(doc_id, state_id): #set the state of a document
+    db = get_db()
+    query = 'UPDATE Documents SET state_id = ? WHERE document_id = ?'
+    db.execute(query, (state_id, doc_id))
+    db.commit()
+
+def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
+    if check_doc_reviewer(doc_id, reviewer_id): #do not add reviewer if already on list
+        return
+    db = get_db()
+    db.execute('INSERT INTO DocReviewers (document_id, reviewer_id) VALUES (?, ?)', (doc_id, reviewer_id))
+    db.commit()
+
+def check_doc_reviewer(doc_id, reviewer_id): #check if a reviewer is on the list for the document review (boolean)
+    db = get_db()
+    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ? AND reviewer_id = ?', (doc_id, reviewer_id)).fetchone() is not None
+
+def get_doc_reviewers(doc_id): #get all reviewers for a document
+    db = get_db()
+    return db.execute('SELECT * FROM DocReviewers WHERE document_id = ?', (doc_id,)).fetchall()
+
+def clear_doc_reviewers(doc_id): #clear all reviewers for a document
+    db = get_db()
+    db.execute('DELETE FROM DocReviewers WHERE document_id = ?', (doc_id,))
+    db.commit()
+
+def add_comment(doc_id, author_id, comment): #add a new comment to a document
+    db = get_db()
+    now = new_date()
+    db.execute('INSERT INTO Comments (document_id, author_id, comment, resolved, date_created) VALUES (?, ?, ?, ?, ?)', (doc_id, author_id, comment, 0, now))
+    db.commit()
+
+def get_comments(doc_id, resolved=None): #get all comments on document
+    db = get_db()
+    query = 'SELECT * FROM Comments WHERE document_id = ?'
+    values = [doc_id]
+    if resolved is not None: #optional filter for resolved level (0 = not resolved, 1 = responses added, 2 = resolved)
+        query += ' AND resolved = ?'
+        values.append(resolved)
+    query += ' ORDER BY date_created'
+    return db.execute(query, tuple(values)).fetchall()
+
+def check_new_responses(doc_id): #check if there are any new responses to any comments on doc
+    comments = get_comments(doc_id, resolved=1) #get comments with responses
+    return len(comments) > 0 #if list is non zero, there are new responses
+
+def get_comment(comment_id): #get a comment by its comment id
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
+
+def clear_comments(doc_id): #clear all comments on a document
+    db = get_db()
+    clear_responses(db, doc_id) #clear comment's responses first
+    db.execute('DELETE FROM Comments WHERE document_id = ?', (doc_id,))
+    db.commit()
+
+def clear_responses(db, doc_id): #clear all responses to a comment
+    comments = get_comments(doc_id) #get all comments for doc
+    for comment in comments: #for each comment
+        comment_id = comment['comment_id'] 
+        db.execute('DELETE FROM Responses WHERE comment_id = ?', (comment_id,)) #delete the responses that match the comment id
+        db.commit()
+
+def add_response(comment_id, author_id, response): #add a new response to comment
+    db = get_db()
+    now = new_date()
+    db.execute('INSERT INTO Responses (comment_id, author_id, response, date_created) VALUES (?, ?, ?, ?)', (comment_id, author_id, response, now))
+    db.commit()
+
+def get_responses(comment_id): #get all responses to a comment
+    db = get_db()
+    return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
+
+def mark_resolved(comment_id, resolved): #mark a comment as resolved
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
+    db.commit()
+    
+def check_all_resolved(doc_id): #check if all comments on a document are resolved (boolean)
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
+
+def resolve_all(doc_id): #mark all comments on a document as resolved
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
+    db.commit()
+
+def get_states(stateint): #get a list of allowed states based on stateint
+    states = []
+    i=0
+    while stateint > 0 and i < len(STATES): #repeat until stateint is shifted down to 0 (no more bits to check) or until there are no more states to check
+        if stateint & 1: # bitwise & 1 checks if bit furthest to right is set
+            states.append(STATES[i]) #if bit is set, append state with id equal to current index to list
+        stateint = stateint >> 1 #shift bits to the right by one so that next bit is furthest right to check again
+        i += 1 #increment index tracker by 1
+    return states #return list of states (the dataclass)
+
+def check_state(stateint, id): #check if a specific state is allowed from a stateint
+    try: return bool(stateint >> id & 1) #shift bits to right by id to get index of id to be checked then & 1 checks if bit is set
+    except: return False #if stateint is none then also return false
+    
+
+def make_stateint(ids): #take a list of integer state ids and make a stateint for storage in db
+    stateint = 0 #start at 0
+    for id in ids: #for each id in list
+        stateint += 1 << id #add the bit at index of id to stateint
+    return stateint #return final stateint
+
+def flip_states(stateint, ids): #flip the values of the bits of a stateint at the specified ids
+    newstates = make_stateint(ids) #make a new stateint out of the specified ids
+    return stateint ^ newstates #bitwise exclusive or flips the bits at the specified indexes by id
+
+def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
+    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
+    components = []
+    for _ in range(5):
+        components.append(date % 100) #mod 100 gets the last two digits and stores it
+        date = date // 100 #set date int to get rid of last two digits
+    components.append(date) #add the last four digits for the year
+    components.reverse() #reverse the list so that it is in the correct order
+    return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
+
+def date_delta(date): #get the difference in time between now and specified date as a deltatime object
+    oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100) #convert old date int to datetime object
+    now = datetime.datetime.now() #get current time for comparison
+    return now - oldDate #return datetime difference
+
+def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
+    relativeTime = date_delta(date) #get the datetime difference
+    
+    if relativeTime.days > 7: #if time difference is > 1 week
+        datepart = relativeTime.days // 7 #get number of weeks it has been since date
+        i = 4 #set time unit to weeks
+    elif relativeTime.days > 0: #if time difference > 1 day
+        datepart = relativeTime.days #get number of days since date
+        i = 3 #set time unit to days
+    elif relativeTime.seconds > 3600: #if time difference > 1 hour
+        datepart = relativeTime.seconds // 3600 #get number of hours since date
+        i = 2 #set time unit to hours
+    elif relativeTime.seconds > 60: #if time difference > 1 minute
+        datepart = relativeTime.seconds // 60 #get number of minutes
+        i = 1 #set time unit to minutes
+    else: #otherwise seconds
+        datepart = relativeTime.seconds
+        i = 0
+
+    if i==0 and datepart < 10: #if time difference is less than 10 seconds
+        return "Just Now" #say "just now"
+    
+    timeUnits = ["Second", "Minute", "Hour", "Day", "Week"] #list of time units 
+
+    return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
+
+
+
 
 def get_roles(type = None, invert = False): #get roles, optionally filter by type. Invert is used to change filter from whitelist to blacklist of types
     query = 'SELECT * FROM Roles' #initial query
