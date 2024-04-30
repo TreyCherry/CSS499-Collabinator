@@ -9,7 +9,6 @@ from werkzeug.utils import secure_filename
 import subprocess
 
 import os
-from sys import platform
 
 from dataclasses import dataclass
 import datetime
