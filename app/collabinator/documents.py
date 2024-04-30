@@ -5,6 +5,7 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from . import db
+
 from .db import STATES
 from .auth import login_required
 from .alerts import make_alert_message
@@ -19,11 +20,11 @@ def index():
     if db.check_state(g.stateint, 0): #check if user has read permissions
         if db.check_state(g.stateint, 2): #if moderator show all docs
             docList = db.get_documents()
-        else:
-            docList = db.get_documents(author_id=g.user["user_id"], min_state_id=3) #if not only show approved docs
+        else: #if not only show approved docs
+            docList = db.get_documents(author_id=g.user["user_id"], min_state_id=3) #approved docs are those that passed approval (state > 3) or docs the user uploaded themselves
 
-        if docList is not None:
-            for doc in docList:
+        if docList is not None: #if doclist is not None
+            for doc in docList: #store the authors name in a dictionary by their id
                 user = db.get_user_by_id(doc["author_id"]) #get author info from db
                 authors[str(doc["author_id"])] = user["first_name"] + " " + user["last_name"] #set authors dictionary at key of author id to author's full name
         
@@ -68,24 +69,24 @@ def update():
         else:
             flash("No document specified.") #if no document is specified say this
         return redirect(url_for('index'))
-    doc = db.get_doc_by_id(docID)
-    if doc is None:
+    doc = db.get_doc_by_id(docID) #get the requested doc
+    if doc is None: #if doc doesnt exist then redirect home
         flash("Document not found.")
         return redirect(url_for('index'))
-    docName = doc["document_name"]
+    docName = doc["document_name"] #save doc name
 
-    if request.method == 'POST':
+    if request.method == 'POST': #if form submitted
         if 'file' not in request.files: #check if file is in request
             flash("No file part.")
-            return redirect(request.url)
-        file = request.files['file']
-        docName = db.upload_file(file, g.user["user_id"], doc)
-        if docName is not None:
-            link = url_for('docs.viewDocument') + "?docID=" + str(docID)
-            message = make_alert_message("doc_updated", document_name=docName)
-            db.add_alert_by_doc_reviewers(docID, message, link)
+            return redirect(request.url) #if not flash error and refresh
+        file = request.files['file'] #get the file
+        docName = db.upload_file(file, g.user["user_id"], doc) #upload file returns the name of the doc if it succeeds and returns none if it fails
+        if docName is not None: #if doc uploaded successfully
+            link = url_for('docs.viewDocument') + "?docID=" + str(docID) #get link to the docment
+            message = make_alert_message("doc_updated", document_name=docName) #generate the message for the alert
+            db.add_alert_by_doc_reviewers(docID, message, link) #send the alert to doc reviewers
             flash("Upload successful!")
-            return redirect(link)
+            return redirect(link) #redirect to the document
     
     return render_template('docview/updateDocument.html', docName=docName, activeNav="docs")
 
@@ -95,41 +96,41 @@ def viewer():
     if not db.check_state(g.stateint, 0): #if user does not have read permissions
         abort(403) #abort with 403 forbidden
 
-    if request.args.get("filename") is None:
-        return "Document not specified." #viewer does not work without specified filename
-    
     filename = request.args["filename"] #get filename from url
+
+    if filename is None: #if no filename
+        return "Document not specified." #viewer does not work so just print doc not found
 
     if not os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)): #if the file does not exist then say so
         return "Document not found."
 
-    type = (filename.rsplit('.', 1)[1] == 'txt' and 'text/plain') or 'application/pdf' #check if file needs to be rendered as a pdf or txt
+    type = (filename.rsplit('.', 1)[1] == 'txt' and 'text/plain') or 'application/pdf' #check if file needs to be rendered as text or pdf
 
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], request.args.get("filename"), mimetype=type) #send the file with the specified mimetype
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename, mimetype=type) #send the file with the specified mimetype
 
-@bp2.route('/responses', methods=('GET', 'POST'))
+@bp2.route('/responses', methods=('GET', 'POST')) #page for responses to comments
 @login_required
 def viewResponses():
     if not db.check_state(g.stateint, 0): #if user does not have read permissions
         return redirect(url_for('index')) #take them back to home page
-    commentID = request.args.get("commentID")
+    commentID = request.args.get("commentID") #get the comment id from the url
     if not commentID:
-        return redirect(url_for('index'))
+        return redirect(url_for('index')) #if no comment id specified go home
     
-    comment = db.get_comment(commentID)
-    if comment is None:
+    comment = db.get_comment(commentID) #get the comment
+    if comment is None: #if comment doesnt actually exist
         flash("Comment not found")
-        return redirect(url_for('index'))
-    docID = comment['document_id']
-    doc = db.get_doc_by_id(docID)
-    if doc is None:
+        return redirect(url_for('index')) #go home
+    docID = comment['document_id'] #get doc id from comment
+    doc = db.get_doc_by_id(docID) #get the doc itself
+    if doc is None: #if doc doesnt exist then also return home
         flash("Document not found")
         return redirect(url_for('index'))
-    docstate = doc["state_id"]
-    users = db.get_users(excludeHidden=False)
-    link = url_for('docs.viewResponses') + "?commentID=" + commentID
+    docstate = doc["state_id"] #get doc's current state
+    users = db.get_users(excludeHidden=False) #get list of all users (including hidden user for user deleted case)
+    link = url_for('docs.viewResponses') + "?commentID=" + commentID #make link for the comment
 
-    if request.method == 'POST':
+    if request.method == 'POST': #if the form is submitted
         resolveButton = request.form.get("resolve")
         if resolveButton is not None:
             if comment['resolved'] == 2 or not db.check_doc_reviewer(docID, g.user['user_id']) or not db.check_state(g.stateint, 6):
