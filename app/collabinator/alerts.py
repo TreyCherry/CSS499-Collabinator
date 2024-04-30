@@ -17,7 +17,7 @@ def alerts():
     alerts = get_alerts_by_id(user_id)  # Fetch alerts from DB
     return render_template('alerts.html', activeNav="alerts", alerts=alerts)
 
-
+#message factory for alerts
 def make_alert_message(message_type, **kwargs): #specify message type and pass args that are related to that message
     match message_type:
         case "new_user":

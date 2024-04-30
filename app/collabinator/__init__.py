@@ -58,7 +58,7 @@ def create_app():
     def favicon():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-    @app.errorhandler(413)
+    @app.errorhandler(413) #error handler for uploaded file exceeding config limit
     def file_too_large(error):
         flash("File too large. Maximum file size is 20MB.")
         return redirect(url_for('index'))
