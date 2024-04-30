@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import datetime
 
 # this file is for handling all database operations
+# functions for each table in order of table definition in schema.sql following general db commands at top
 
 @dataclass
 class State: #dataclass for storing important information associated with states. 
@@ -42,6 +43,8 @@ STATES = [
 ]
 
 ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'} #this constant is used to determine if a file is allowed to be uploaded by its extension
+
+#start general section
 
 def get_db(): #get the database connection
     if 'db' not in g: #check if db is already stored
@@ -92,9 +95,39 @@ def init_app(app): #init_app function to be called in __init__.py to ensure data
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command) #add init_db_command as a command line option for the app
 
+#end general section
+#start role section
+
 def get_role(id): #search database for role by id
     db = get_db()
     return db.execute('SELECT * FROM Roles WHERE role_id = ?', (id,)).fetchone() #get one role
+
+def get_roles(type = None, invert = False): #get roles, optionally filter by type. Invert is used to change filter from whitelist to blacklist of types
+    query = 'SELECT * FROM Roles' #initial query
+    if type is not None: #if a type is specified
+        query += ' WHERE ' #add where clause
+        if invert:
+            query += 'NOT ' #if inverted add not
+        query += 'role_type = ' + str(type) #add type specification
+    query +=  ' ORDER BY role_type, role_name' #order by type first then name
+    db = get_db()
+    return db.execute(query).fetchall() #get all values that match
+
+def get_roles_by_states(*states): #get roles by allowed states
+    allRoles = get_roles() #get all roles
+    if allRoles is None:
+        return None
+    validRoles = [] #initially empty
+    for state in states:
+        for role in allRoles: #for each role
+            if role in validRoles: #do not double add roles
+                continue
+            if check_state(role["allowed_states"], state): #if role is allowed
+                validRoles.append(role) #add role to list
+    return validRoles #return list
+
+#end role section
+#start user section
 
 def get_user_by_id(id): #search database for user by id
     db = get_db()
@@ -438,29 +471,7 @@ def date_concise(date): #return a shortened version of date_format that only spe
 
 
 
-def get_roles(type = None, invert = False): #get roles, optionally filter by type. Invert is used to change filter from whitelist to blacklist of types
-    query = 'SELECT * FROM Roles' #initial query
-    if type is not None: #if a type is specified
-        query += ' WHERE ' #add where clause
-        if invert:
-            query += 'NOT ' #if inverted add not
-        query += 'role_type = ' + str(type) #add type specification
-    query +=  ' ORDER BY role_type, role_name' #order by type first then name
-    db = get_db()
-    return db.execute(query).fetchall() #get all values that match
 
-def get_roles_by_states(*states): #get roles by allowed states
-    allRoles = get_roles() #get all roles
-    if allRoles is None:
-        return None
-    validRoles = [] #initially empty
-    for state in states:
-        for role in allRoles: #for each role
-            if role in validRoles: #do not double add roles
-                continue
-            if check_state(role["allowed_states"], state): #if role is allowed
-                validRoles.append(role) #add role to list
-    return validRoles #return list
 
 def update_activity(user_id): #reset last active time to current time
     if user_id is not None: #if user id is not none
