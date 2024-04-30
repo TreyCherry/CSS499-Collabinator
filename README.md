@@ -8,7 +8,7 @@ Docker Desktop Client installed and running
 Stable Internet Connection
 ## To setup
 Clone the repository into a local directory
-Run UPDATE.bat to configure the server for local docker client
+Run INIT.bat to configure the server for local docker client
 Run START.bat to launch the server
 
-### NOTE: Running UPDATE.bat again will reinitialize the database, wiping its previous contents
+### NOTE: Running INIT.bat again will reinitialize the database, wiping its previous contents
