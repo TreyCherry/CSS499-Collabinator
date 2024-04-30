@@ -253,8 +253,6 @@ def remove_role(id): #remove role by id
 
     db.execute('DELETE FROM Roles WHERE role_id = ?', (id,)) #then delete the role
     db.commit()
-    
-    #alerts.py functions 
 
 #end role section
 #start user section
@@ -562,17 +560,17 @@ def get_responses(comment_id): #get all responses to a comment
 #end response section
 #start alerts section
 
-def get_alerts_by_id(id):
+def get_alerts_by_id(id): #get alerts by the user id
     db = get_db()
     return db.execute(
         'SELECT * FROM Alerts WHERE user_id = ? ORDER BY date_created DESC', (id,)
     ).fetchall()
 
-def add_alert_by_id(for_user, message, link=None):
+def add_alert_by_id(for_user, message, link=None): #add alert by user id
     columns = "user_id, message, date_created"
     qmarks = "?, ?, ?"
     values = [for_user, message, new_date()]
-    if link is not None:
+    if link is not None: #if a link is specified add it to the alert
         columns += ", link"
         qmarks += ", ?"
         values.append(link)
@@ -584,14 +582,14 @@ def add_alert_by_id(for_user, message, link=None):
     )
     db.commit()
 
-def add_alert_by_role(role_id, message, link=None):
-    users = get_users(role_id)
+def add_alert_by_role(role_id, message, link=None): #add alert to all users with role
+    users = get_users(role_id) #get users with the role
     for user in users:
-        add_alert_by_id(user["user_id"], message, link)
+        add_alert_by_id(user["user_id"], message, link) #send alert by user id to each user
 
-def add_alert_by_doc_reviewers(docID, message, link=None):
-    reviewers = get_doc_reviewers(docID)
+def add_alert_by_doc_reviewers(docID, message, link=None): #add alert to all document reviewers of a document
+    reviewers = get_doc_reviewers(docID) #get the doc reviewers for the document
     for reviewer in reviewers:
-        add_alert_by_id(reviewer["reviewer_id"], message, link)
+        add_alert_by_id(reviewer["reviewer_id"], message, link) #send alert by user id to each reviewer
 
 #end alert section
