@@ -44,6 +44,14 @@ CREATE TABLE Documents ( --table of document information
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
 );
 
+CREATE TABLE DocReviewers ( --table of document reviewers
+    combo_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER NOT NULL, --document the reviewer is for by id
+    reviewer_id INTEGER NOT NULL, --reviewer by user id
+    FOREIGN KEY (document_id) REFERENCES Documents(document_id),
+    FOREIGN KEY (reviewer_id) REFERENCES Users(user_id)
+);
+
 CREATE TABLE Comments ( --table of comments on documents
     comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
     document_id INTEGER NOT NULL, --document the comment is for by id
@@ -63,14 +71,6 @@ CREATE TABLE Responses ( --table of responses to comments
     date_created INT NOT NULL, --date the response was created
     FOREIGN KEY (comment_id) REFERENCES Comments(comment_id),
     FOREIGN KEY (author_id) REFERENCES Users(user_id)
-);
-
-CREATE TABLE DocReviewers ( --table of document reviewers
-    combo_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    document_id INTEGER NOT NULL, --document the reviewer is for by id
-    reviewer_id INTEGER NOT NULL, --reviewer by user id
-    FOREIGN KEY (document_id) REFERENCES Documents(document_id),
-    FOREIGN KEY (reviewer_id) REFERENCES Users(user_id)
 );
 
 CREATE TABLE Alerts ( --table of alerts

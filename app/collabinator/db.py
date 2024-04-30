@@ -96,6 +96,77 @@ def init_app(app): #init_app function to be called in __init__.py to ensure data
     app.cli.add_command(init_db_command) #add init_db_command as a command line option for the app
 
 #end general section
+#start utility section
+
+def get_states(stateint): #get a list of allowed states based on stateint
+    states = []
+    i=0
+    while stateint > 0 and i < len(STATES): #repeat until stateint is shifted down to 0 (no more bits to check) or until there are no more states to check
+        if stateint & 1: # bitwise & 1 checks if bit furthest to right is set
+            states.append(STATES[i]) #if bit is set, append state with id equal to current index to list
+        stateint = stateint >> 1 #shift bits to the right by one so that next bit is furthest right to check again
+        i += 1 #increment index tracker by 1
+    return states #return list of states (the dataclass)
+
+def check_state(stateint, id): #check if a specific state is allowed from a stateint
+    try: return bool(stateint >> id & 1) #shift bits to right by id to get index of id to be checked then & 1 checks if bit is set
+    except: return False #if stateint is none then also return false
+    
+
+def make_stateint(ids): #take a list of integer state ids and make a stateint for storage in db
+    stateint = 0 #start at 0
+    for id in ids: #for each id in list
+        stateint += 1 << id #add the bit at index of id to stateint
+    return stateint #return final stateint
+
+def flip_states(stateint, ids): #flip the values of the bits of a stateint at the specified ids
+    newstates = make_stateint(ids) #make a new stateint out of the specified ids
+    return stateint ^ newstates #bitwise exclusive or flips the bits at the specified indexes by id
+
+def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
+    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
+    components = []
+    for _ in range(5):
+        components.append(date % 100) #mod 100 gets the last two digits and stores it
+        date = date // 100 #set date int to get rid of last two digits
+    components.append(date) #add the last four digits for the year
+    components.reverse() #reverse the list so that it is in the correct order
+    return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
+
+def date_delta(date): #get the difference in time between now and specified date as a deltatime object
+    oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100) #convert old date int to datetime object
+    now = datetime.datetime.now() #get current time for comparison
+    return now - oldDate #return datetime difference
+
+def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
+    relativeTime = date_delta(date) #get the datetime difference
+    
+    if relativeTime.days > 7: #if time difference is > 1 week
+        datepart = relativeTime.days // 7 #get number of weeks it has been since date
+        i = 4 #set time unit to weeks
+    elif relativeTime.days > 0: #if time difference > 1 day
+        datepart = relativeTime.days #get number of days since date
+        i = 3 #set time unit to days
+    elif relativeTime.seconds > 3600: #if time difference > 1 hour
+        datepart = relativeTime.seconds // 3600 #get number of hours since date
+        i = 2 #set time unit to hours
+    elif relativeTime.seconds > 60: #if time difference > 1 minute
+        datepart = relativeTime.seconds // 60 #get number of minutes
+        i = 1 #set time unit to minutes
+    else: #otherwise seconds
+        datepart = relativeTime.seconds
+        i = 0
+
+    if i==0 and datepart < 10: #if time difference is less than 10 seconds
+        return "Just Now" #say "just now"
+    
+    timeUnits = ["Second", "Minute", "Hour", "Day", "Week"] #list of time units 
+
+    return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
+
+#end utility section
 #start role section
 
 def get_role(id): #search database for role by id
@@ -125,6 +196,66 @@ def get_roles_by_states(*states): #get roles by allowed states
             if check_state(role["allowed_states"], state): #if role is allowed
                 validRoles.append(role) #add role to list
     return validRoles #return list
+
+def add_role(name, allowedStates, description, type=1): #add a new role to database
+    columns = "role_name, allowed_states, role_type" #initial collumns
+    qMarks = "?, ?, ?" #initial number of question marks
+    values = [name.title(), make_stateint(allowedStates), type] #initial values
+    if description.strip() != "": #if description is not empty when stripped of whitespace
+        columns += ", description" #add description column
+        qMarks += ", ?" #add extra question mark for inserting extra value
+        values.append(description.strip()) #add description to values
+    db = get_db()
+    db.execute(
+        'INSERT INTO Roles (' + columns + ') VALUES (' + qMarks + ')',
+        tuple(values) #insert new role into database
+    )
+    db.commit() #commit to db
+
+def update_role(id, name=None, states=None, description=None): #update role by id, name and description are both strings, states is a list of int ids
+    db = get_db()
+    
+    columns = "" #initially empty
+    values = []
+    
+    if name is not None: #check each value to see if it needs to be updated
+        columns += "role_name = ?"
+        values.append(name)
+    if states is not None:
+        stateint = db.execute('SELECT allowed_states FROM Roles WHERE role_id = ?', (id,)).fetchone()["allowed_states"]
+        if columns != "":
+            columns += ", " #only add comma if something came before it
+        columns += "allowed_states = ?"
+        values.append(flip_states(stateint, states)) #get new stateint by flipping values of all states marked as changed
+    if description is not None:
+        if columns != "":
+            columns += ", "
+        columns += "description = ?"
+        values.append(description)
+    
+    if columns == "": #if nothing was updated
+        return False #return false
+
+    values.append(id) #add role id to values for where clause
+
+    db.execute(
+        'UPDATE Roles SET ' + columns + ' WHERE role_id = ?', #update user with new values
+        tuple(values)
+    )
+    db.commit()
+
+    return True #return true if succeeded
+
+def remove_role(id): #remove role by id
+    db = get_db()
+
+    db.execute('UPDATE Users SET role_id = 2 WHERE role_id = ?', (id,)) #first make sure all users with this role are changed to no role (role 2)
+    db.commit()
+
+    db.execute('DELETE FROM Roles WHERE role_id = ?', (id,)) #then delete the role
+    db.commit()
+    
+    #alerts.py functions 
 
 #end role section
 #start user section
@@ -180,6 +311,26 @@ def update_user(user_id, new_details): #update a user in database, new_details i
     query = "UPDATE Users SET " + columns + " WHERE user_id = ?" #update specified columns where user id matches
     db.execute(query, tuple(values)) #execute query
     db.commit() #commit to db
+
+def update_activity(user_id): #reset last active time to current time
+    if user_id is not None: #if user id is not none
+        db = get_db()
+        db.execute(
+            'UPDATE Users SET last_active = ? WHERE user_id = ?', (new_date(), user_id) #update user with new time
+        )
+        db.commit() #commit to db
+
+def remove_user(user_id): #remove user by their id
+    db = get_db()
+    db.execute('UPDATE Responses SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all responses by this user to be by deleted user
+    db.execute('UPDATE Comments SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all comments by this user to be by deleted user
+    db.execute('UPDATE Documents SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all documents by this user to be by deleted user
+    db.execute('DELETE FROM DocReviewers WHERE reviewer_id = ?', (user_id,)) #delete all keys in docReviewers
+    db.execute('DELETE FROM Users WHERE user_id = ?', (user_id,)) #delete user
+    db.commit() #commit to db
+
+#end user section
+#start document section
 
 def allowed_file(filename): #checks a string filename for if it is in the allowed_extensions list
     return '.' in filename and \
@@ -319,6 +470,9 @@ def set_doc_state(doc_id, state_id): #set the state of a document
     db.execute(query, (state_id, doc_id))
     db.commit()
 
+#end document section
+#start doc reviewer section
+
 def add_doc_reviewer(doc_id, reviewer_id): #add a reviewer to a document
     if check_doc_reviewer(doc_id, reviewer_id): #do not add reviewer if already on list
         return
@@ -339,6 +493,9 @@ def clear_doc_reviewers(doc_id): #clear all reviewers for a document
     db.execute('DELETE FROM DocReviewers WHERE document_id = ?', (doc_id,))
     db.commit()
 
+#end doc reviewer section
+#start comment section
+
 def add_comment(doc_id, author_id, comment): #add a new comment to a document
     db = get_db()
     now = new_date()
@@ -355,10 +512,6 @@ def get_comments(doc_id, resolved=None): #get all comments on document
     query += ' ORDER BY date_created'
     return db.execute(query, tuple(values)).fetchall()
 
-def check_new_responses(doc_id): #check if there are any new responses to any comments on doc
-    comments = get_comments(doc_id, resolved=1) #get comments with responses
-    return len(comments) > 0 #if list is non zero, there are new responses
-
 def get_comment(comment_id): #get a comment by its comment id
     db = get_db()
     return db.execute('SELECT * FROM Comments WHERE comment_id = ?', (comment_id,)).fetchone()
@@ -368,6 +521,27 @@ def clear_comments(doc_id): #clear all comments on a document
     clear_responses(db, doc_id) #clear comment's responses first
     db.execute('DELETE FROM Comments WHERE document_id = ?', (doc_id,))
     db.commit()
+
+def mark_resolved(comment_id, resolved): #mark a comment as resolved
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
+    db.commit()
+    
+def check_all_resolved(doc_id): #check if all comments on a document are resolved (boolean)
+    db = get_db()
+    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
+
+def resolve_all(doc_id): #mark all comments on a document as resolved
+    db = get_db()
+    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
+    db.commit()
+
+#end comment section
+#start response section
+
+def check_new_responses(doc_id): #check if there are any new responses to any comments on doc
+    comments = get_comments(doc_id, resolved=1) #get comments with responses
+    return len(comments) > 0 #if list is non zero, there are new responses
 
 def clear_responses(db, doc_id): #clear all responses to a comment
     comments = get_comments(doc_id) #get all comments for doc
@@ -386,170 +560,8 @@ def get_responses(comment_id): #get all responses to a comment
     db = get_db()
     return db.execute('SELECT * FROM Responses WHERE comment_id = ? ORDER BY date_created', (comment_id,)).fetchall()
 
-def mark_resolved(comment_id, resolved): #mark a comment as resolved
-    db = get_db()
-    db.execute('UPDATE Comments SET resolved = ? WHERE comment_id = ?', (resolved, comment_id))
-    db.commit()
-    
-def check_all_resolved(doc_id): #check if all comments on a document are resolved (boolean)
-    db = get_db()
-    return db.execute('SELECT * FROM Comments WHERE document_id = ? AND resolved < 2', (doc_id,)).fetchone() is None
-
-def resolve_all(doc_id): #mark all comments on a document as resolved
-    db = get_db()
-    db.execute('UPDATE Comments SET resolved = 2 WHERE document_id = ?', (doc_id,))
-    db.commit()
-
-def get_states(stateint): #get a list of allowed states based on stateint
-    states = []
-    i=0
-    while stateint > 0 and i < len(STATES): #repeat until stateint is shifted down to 0 (no more bits to check) or until there are no more states to check
-        if stateint & 1: # bitwise & 1 checks if bit furthest to right is set
-            states.append(STATES[i]) #if bit is set, append state with id equal to current index to list
-        stateint = stateint >> 1 #shift bits to the right by one so that next bit is furthest right to check again
-        i += 1 #increment index tracker by 1
-    return states #return list of states (the dataclass)
-
-def check_state(stateint, id): #check if a specific state is allowed from a stateint
-    try: return bool(stateint >> id & 1) #shift bits to right by id to get index of id to be checked then & 1 checks if bit is set
-    except: return False #if stateint is none then also return false
-    
-
-def make_stateint(ids): #take a list of integer state ids and make a stateint for storage in db
-    stateint = 0 #start at 0
-    for id in ids: #for each id in list
-        stateint += 1 << id #add the bit at index of id to stateint
-    return stateint #return final stateint
-
-def flip_states(stateint, ids): #flip the values of the bits of a stateint at the specified ids
-    newstates = make_stateint(ids) #make a new stateint out of the specified ids
-    return stateint ^ newstates #bitwise exclusive or flips the bits at the specified indexes by id
-
-def new_date(): #return a new date in the format YYYYMMDDHHMMSS as an integer
-    return int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-
-def date_format(date): #take a formatted date integer and return a readable string with format "YYYY-MM-DD HH:MM:SS"
-    components = []
-    for _ in range(5):
-        components.append(date % 100) #mod 100 gets the last two digits and stores it
-        date = date // 100 #set date int to get rid of last two digits
-    components.append(date) #add the last four digits for the year
-    components.reverse() #reverse the list so that it is in the correct order
-    return "%04d-%02d-%02d %02d:%02d:%02d" % tuple(components) #return formatted string
-
-def date_delta(date): #get the difference in time between now and specified date as a deltatime object
-    oldDate = datetime.datetime(date//100**5, date//100**4%100, date//100**3%100, date//100**2%100, date//100%100, date%100) #convert old date int to datetime object
-    now = datetime.datetime.now() #get current time for comparison
-    return now - oldDate #return datetime difference
-
-def date_concise(date): #return a shortened version of date_format that only specifies based on relative time
-    relativeTime = date_delta(date) #get the datetime difference
-    
-    if relativeTime.days > 7: #if time difference is > 1 week
-        datepart = relativeTime.days // 7 #get number of weeks it has been since date
-        i = 4 #set time unit to weeks
-    elif relativeTime.days > 0: #if time difference > 1 day
-        datepart = relativeTime.days #get number of days since date
-        i = 3 #set time unit to days
-    elif relativeTime.seconds > 3600: #if time difference > 1 hour
-        datepart = relativeTime.seconds // 3600 #get number of hours since date
-        i = 2 #set time unit to hours
-    elif relativeTime.seconds > 60: #if time difference > 1 minute
-        datepart = relativeTime.seconds // 60 #get number of minutes
-        i = 1 #set time unit to minutes
-    else: #otherwise seconds
-        datepart = relativeTime.seconds
-        i = 0
-
-    if i==0 and datepart < 10: #if time difference is less than 10 seconds
-        return "Just Now" #say "just now"
-    
-    timeUnits = ["Second", "Minute", "Hour", "Day", "Week"] #list of time units 
-
-    return f"{datepart} {timeUnits[i]}" + (datepart > 1 and 's' or '') + " ago" #return relative concise time difference
-
-
-
-
-
-
-def update_activity(user_id): #reset last active time to current time
-    if user_id is not None: #if user id is not none
-        db = get_db()
-        db.execute(
-            'UPDATE Users SET last_active = ? WHERE user_id = ?', (new_date(), user_id) #update user with new time
-        )
-        db.commit() #commit to db
-
-def remove_user(user_id): #remove user by their id
-    db = get_db()
-    db.execute('UPDATE Responses SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all responses by this user to be by deleted user
-    db.execute('UPDATE Comments SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all comments by this user to be by deleted user
-    db.execute('UPDATE Documents SET author_id = 2 WHERE author_id = ?', (user_id,)) #set all documents by this user to be by deleted user
-    db.execute('DELETE FROM DocReviewers WHERE reviewer_id = ?', (user_id,)) #delete all keys in docReviewers
-    db.execute('DELETE FROM Users WHERE user_id = ?', (user_id,)) #delete user
-    db.commit() #commit to db
-
-def add_role(name, allowedStates, description, type=1): #add a new role to database
-    columns = "role_name, allowed_states, role_type" #initial collumns
-    qMarks = "?, ?, ?" #initial number of question marks
-    values = [name.title(), make_stateint(allowedStates), type] #initial values
-    if description.strip() != "": #if description is not empty when stripped of whitespace
-        columns += ", description" #add description column
-        qMarks += ", ?" #add extra question mark for inserting extra value
-        values.append(description.strip()) #add description to values
-    db = get_db()
-    db.execute(
-        'INSERT INTO Roles (' + columns + ') VALUES (' + qMarks + ')',
-        tuple(values) #insert new role into database
-    )
-    db.commit() #commit to db
-
-def update_role(id, name=None, states=None, description=None): #update role by id, name and description are both strings, states is a list of int ids
-    db = get_db()
-    
-    columns = "" #initially empty
-    values = []
-    
-    if name is not None: #check each value to see if it needs to be updated
-        columns += "role_name = ?"
-        values.append(name)
-    if states is not None:
-        stateint = db.execute('SELECT allowed_states FROM Roles WHERE role_id = ?', (id,)).fetchone()["allowed_states"]
-        if columns != "":
-            columns += ", " #only add comma if something came before it
-        columns += "allowed_states = ?"
-        values.append(flip_states(stateint, states)) #get new stateint by flipping values of all states marked as changed
-    if description is not None:
-        if columns != "":
-            columns += ", "
-        columns += "description = ?"
-        values.append(description)
-    
-    if columns == "": #if nothing was updated
-        return False #return false
-
-    values.append(id) #add role id to values for where clause
-
-    db.execute(
-        'UPDATE Roles SET ' + columns + ' WHERE role_id = ?', #update user with new values
-        tuple(values)
-    )
-    db.commit()
-
-    return True #return true if succeeded
-
-def remove_role(id): #remove role by id
-    db = get_db()
-
-    db.execute('UPDATE Users SET role_id = 2 WHERE role_id = ?', (id,)) #first make sure all users with this role are changed to no role (role 2)
-    db.commit()
-
-    db.execute('DELETE FROM Roles WHERE role_id = ?', (id,)) #then delete the role
-    db.commit()
-    
-    #alerts.py functions 
-    
+#end response section
+#start alerts section
 
 def get_alerts_by_id(id):
     db = get_db()
@@ -583,3 +595,4 @@ def add_alert_by_doc_reviewers(docID, message, link=None):
     for reviewer in reviewers:
         add_alert_by_id(reviewer["reviewer_id"], message, link)
 
+#end alert section
