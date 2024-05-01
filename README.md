@@ -27,8 +27,8 @@
   - User managers can create custom roles to tailor custom permissions for the Company's desired Document Workflow
 ###  Using the Web App
 * Default admin account email login
-  - **_Email_: admin@collab.inator
-  - _Password_: admin**
+  - **_Email_: admin@collab.inator**
+  - **_Password_: admin**
 * To change the default name and email of the root admin account
   - Go To **Members** Page
   - Select Admin User
