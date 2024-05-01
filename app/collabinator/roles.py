@@ -48,6 +48,8 @@ def roles():
             changerows[rowIndex]["states"].append(int(change[split+1:])) #otherwise add the state id to the list of changed states
         
         for index, changerow in changerows.items(): #get each key, value pair in changerows dict
+            if get_role(index) is None:
+                continue
             try:
                 update_role(index, changerow.get("name", None), changerow.get("states", None), changerow.get("description", None)) #update each role with new values
             except get_db().IntegrityError: #if role name already exists flash error for it
