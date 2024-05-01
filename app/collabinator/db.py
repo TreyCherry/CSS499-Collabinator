@@ -41,7 +41,7 @@ STATES = [
     State(10, "Manage Users", "Review Closed", "Manage Users")
 ]
 
-ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt','txt','c', 'cpp', 'h', 'java', 'py', 'js', 'html', 'css', 'php', 'rb', 'swift', 'go', 'pl', 'bin', 'sql', 'sh', 'asm', 'm', 'json', 'xml', 'yml', 'ini', 'md'} #this constant is used to determine if a file is allowed to be uploaded by its extension
+ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt','c', 'cpp', 'h', 'java', 'py', 'js', 'html', 'css', 'php', 'rb', 'swift', 'go', 'pl', 'bin', 'sql', 'sh', 'asm', 'm', 'json', 'xml', 'yml', 'ini', 'md'} #this constant is used to determine if a file is allowed to be uploaded by its extension
 TXT_EXTENSIONS = {'txt','c', 'cpp', 'h', 'java', 'py', 'js', 'html', 'css', 'php', 'rb', 'swift', 'go', 'pl', 'bin', 'sql', 'sh', 'asm', 'm', 'json', 'xml', 'yml', 'ini', 'md'}
 
 
