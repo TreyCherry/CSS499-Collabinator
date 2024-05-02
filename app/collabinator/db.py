@@ -41,7 +41,11 @@ STATES = [
     State(10, "Manage Users", "Review Closed", "Manage Users")
 ]
 
-ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt'} #this constant is used to determine if a file is allowed to be uploaded by its extension
+ALLOWED_EXTENSIONS = {'docx', 'pdf', 'doc', 'rtf', 'ppt', 'pptx', 'txt','c', 'cpp', 'h', 'java', 'py', 'js', 'html', 'css', 'php', 'rb', 'swift', 'go', 'pl', 'bin', 'sql', 'sh', 'asm', 'm', 'json', 'xml', 'yml', 'ini', 'md'} #this constant is used to determine if a file is allowed to be uploaded by its extension
+TXT_EXTENSIONS = {'txt','c', 'cpp', 'h', 'java', 'py', 'js', 'html', 'css', 'php', 'rb', 'swift', 'go', 'pl', 'bin', 'sql', 'sh', 'asm', 'm', 'json', 'xml', 'yml', 'ini', 'md'}
+
+
+
 
 #start general section
 
@@ -333,6 +337,10 @@ def allowed_file(filename): #checks a string filename for if it is in the allowe
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def is_text_fmt(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in TXT_EXTENSIONS
+
 def upload_file(file, author_id, existingDoc=None): #handle uploading a file from file input
     if file.filename == '': #if no file is input this will be blank
         flash('No selected file') #set error message and return false
@@ -345,26 +353,26 @@ def upload_file(file, author_id, existingDoc=None): #handle uploading a file fro
     name, type = get_name_type(filename) #get name and type of file
     if (existingDoc != None): #if existingName is set then use it
         name = existingDoc["document_name"] #set name and filename to existing values
+        ext = filename.rsplit('.', 1)[1].lower()
         filename = get_filename(existingDoc)
-        ext = filename.rsplit('.', 1)[1].lower() #keep new uploaded file name extention for use later
         try:
-            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #try to remove the old file that it is replacing
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
         except:
-            flash("Old file failed to remove") #if it fails to remove flash error
-        filename = name + '.' + ext #set new filename to be the old name with new extension
+            flash("Old file failed to remove")
+        filename = name + '.' + ext
 
-    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database and its not supposed to
+    if (existingDoc is None and get_doc_by_name(name) is not None): #check if document already has this name in database
         flash('Document already exists')
         return None
     
     #enter filetype conversion here. File has been uploaded and type checked. We know it's an accepted type and we know if it already exists. Now see if it needs to be converted
-    #if not type == "txt" or not type == "pdf":
-
+    #if not type == "txt" or not type == "pdf", additionally, if it is one of the whitelisted txt formats:
+    
 
     try:
         file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #save the unconverted file to the configured folder
     except:
-        flash('File could not be saved') #flash error if fail
+        flash('File could not be saved')
         return None
     
     if type == 2: #file needs to be converted. use libreoffice to do so
@@ -372,14 +380,24 @@ def upload_file(file, author_id, existingDoc=None): #handle uploading a file fro
         fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
         try:
             subprocess.run(f'export HOME=/tmp && libreoffice --headless --convert-to pdf:writer_pdf_Export {fileroute} --outdir {outroute}', shell=True) #run linux terminal command to convert file
-            try:
-                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
-            except:
-                flash("Old file failed to remove") #if it fails to remove flash error
         except:
-            flash('File could not be converted') #flash error if fail and quit
+            flash('File could not be converted')
             return None
-    
+        os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename)) #delete unconverted file as it is no longer needed
+
+    # file is an acceptable text formate
+    if type == 3:
+        outroute = os.path.join(current_app.config['UPLOAD_FOLDER'], f"{name}.txt") #format file output path string
+        fileroute = os.path.join(current_app.config['UPLOAD_FOLDER'], filename) #format file input path string. Libreoffice needs a path to the unconverted file
+        try:
+            os.rename(fileroute, outroute)
+        except:
+            flash('File could not be converted')
+            return None
+        
+        #Now, mark it as a standard text document.
+        type = 0
+
     if (existingDoc is None):
         update_document(name, type, author_id) #update document will add a new document or update an existing one
     else:
