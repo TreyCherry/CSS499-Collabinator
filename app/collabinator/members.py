@@ -3,9 +3,7 @@ from flask import(
 )
 
 from .auth import login_required, manager_login_required
-from .db import (
-    get_db, update_user, get_users, get_user_by_id, get_roles, remove_user
-)
+from . import db
 
 bp = Blueprint('members', __name__, url_prefix='/members')
 
@@ -19,7 +17,7 @@ def members():
         session["target_id"] = request.form["user_id"] #store the target id in session to access on next page
         return redirect(url_for('members.editMember')) #go to members/edit
 
-    members = get_users() #get all users in database
+    members = db.get_users() #get all users in database
     return render_template('manage/members.html', members=members, activeNav="members") #render members.html with list of users
 
 @bp.route('/edit', methods=('GET', 'POST')) #accessed at /members/edit
@@ -35,17 +33,17 @@ def editMember():
                 if targetid == "1": # 1 is the id of the root user, so do not allow deleting it
                     flash("Cannot delete root account.")
                     return redirect(url_for('members'))
-                remove_user(targetid) #otherwise delete user if not root account
+                db.remove_user(targetid) #otherwise delete user if not root account
             return redirect(url_for('members')) #go back to members page
         try:
-            update_user(targetid, request.form) #try to update the user, form dictionary is sorted in function
-        except get_db().IntegrityError: #if email already in use, db will get integrity error as emails must be unique
+            db.update_user(targetid, request.form) #try to update the user, form dictionary is sorted in function
+        except db.get_db().IntegrityError: #if email already in use, db will get integrity error as emails must be unique
             flash("Email already in use.")
         else:
             return redirect(url_for('members')) #if no errors go back to members page, otherwise stay on edit page
 
     session["target_id"] = targetid #put target id back in session in case page is refreshed before form is submitted
 
-    member = get_user_by_id(targetid) # get user by target id
-    roles = get_roles() #get all roles
+    member = db.get_user_by_id(targetid) # get user by target id
+    roles = db.get_roles() #get all roles
     return render_template('manage/editMember.html', activeNav="members", member=member, roles=roles) 

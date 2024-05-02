@@ -3,9 +3,8 @@ from flask import (
 )
 
 from .auth import login_required, manager_login_required
-from .db import (
-    get_roles, STATES, add_role, get_db, update_role, remove_role
-)
+from .db import STATES
+from . import db
 
 bp = Blueprint('roles', __name__, url_prefix='/roles')
 
@@ -18,7 +17,7 @@ def roles():
             if request.form["delete"] == "1" or request.form["delete"] == "2": #if the target role id is 1 or 2, do not allow deletion
                 flash("Cannot delete root role.")
                 return redirect(url_for('roles'))
-            remove_role(request.form["delete"]) #otherwise delete role
+            db.remove_role(request.form["delete"]) #otherwise delete role
             return redirect(url_for('roles')) #reload roles page
 
         changelist = request.form.get("changed", None) #get list of changes
@@ -48,15 +47,17 @@ def roles():
             changerows[rowIndex]["states"].append(int(change[split+1:])) #otherwise add the state id to the list of changed states
         
         for index, changerow in changerows.items(): #get each key, value pair in changerows dict
+            if db.get_role(index) is None:
+                continue
             try:
-                update_role(index, changerow.get("name", None), changerow.get("states", None), changerow.get("description", None)) #update each role with new values
-            except get_db().IntegrityError: #if role name already exists flash error for it
+                db.update_role(index, changerow.get("name", None), changerow.get("states", None), changerow.get("description", None)) #update each role with new values
+            except db.get_db().IntegrityError: #if role name already exists flash error for it
                 flash("Role names must be unique.")
         
         return redirect(url_for('roles')) #refresh roles when done
 
     # if no POST, get roles and display them
-    roles = get_roles(type=2, invert=True) # get all roles except none role
+    roles = db.get_roles(type=2, invert=True) # get all roles except none role
 
 
     return render_template('manage/roles.html', roles=roles, activeNav="roles", states=STATES) #render template with roles and states passed to it
@@ -82,8 +83,8 @@ def addRole():
                 states.append(i) #add it to the list
 
         try:
-            add_role(request.form["role_name"], states, request.form["role_description"]) #add the role with its states set
-        except get_db().IntegrityError: #if role name already exists flash error for it
+            db.add_role(request.form["role_name"], states, request.form["role_description"]) #add the role with its states set
+        except db.get_db().IntegrityError: #if role name already exists flash error for it
             flash("Role with that name already exists")
         else:
             return redirect(url_for('roles')) #if it was successful go back to roles page

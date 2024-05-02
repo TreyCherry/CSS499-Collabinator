@@ -6,10 +6,7 @@ from flask import (
 from werkzeug.security import check_password_hash
 from werkzeug.exceptions import abort
 
-from .db import (
-    check_state, get_role, add_user, get_user_by_email, get_roles_by_states, add_alert_by_role, 
-    update_activity, get_user_by_id, new_date, get_db, date_delta
-)
+from . import db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth') #auth is the name of the blueprint
 
@@ -30,21 +27,21 @@ def register():
 
         if error is None: #if no errors
             try: #try to add user
-                add_user(request.form["email"], request.form["password"], 2, request.form["first_name"], request.form["last_name"], new_date()) #defined in db.py
-            except get_db().IntegrityError: #if email already exists
+                db.add_user(request.form["email"], request.form["password"], 2, request.form["first_name"], request.form["last_name"], db.new_date()) #defined in db.py
+            except db.get_db().IntegrityError: #if email already exists
                 error = f"User {request.form['email']} is already registered." #set error message
             else: #in try/except blocks else just runs if no exception 
                 flash("Account created successfully. Please log in.")
                 
-                userID = get_user_by_email(request.form["email"])["user_id"] #get id of user from db
+                userID = db.get_user_by_email(request.form["email"])["user_id"] #get id of user from db
                 link = url_for("members") + "?select=" + str(userID) #create link to members page with user id as query param
 
                 from .alerts import make_alert_message
                 #send alert to managers
                 message = make_alert_message("new_user", email=request.form["email"])  # Create alert message
-                roles = get_roles_by_states(10)  # Fetch all users with role 10
+                roles = db.get_roles_by_states(10)  # Fetch all users with role 10
                 for role in roles:
-                    add_alert_by_role(role["role_id"], message, link)  # Send alert to each manager
+                    db.add_alert_by_role(role["role_id"], message, link)  # Send alert to each manager
 
                 return redirect(url_for("auth.login")) #redirect to login       
         flash(error) #flash error message
@@ -57,7 +54,7 @@ def login():
         email = request.form['email'].lower() #email is stored in lowercase
         password = request.form['password'] #password is not stored in lowercase
         error = None 
-        user = get_user_by_email(email) #get user info from db table via email
+        user = db.get_user_by_email(email) #get user info from db table via email
 
         if user is None: #if no user was found
             error = 'Incorrect email.'
@@ -67,7 +64,7 @@ def login():
         if error is None: #if no errors
             session.clear() #clear session variables
             session['user_id'] = user['user_id'] #set session user_id to user_id from db
-            update_activity(user["user_id"]) #update last active time in db
+            db.update_activity(user["user_id"]) #update last active time in db
             return redirect(url_for('index')) #redirect to index
 
         flash(error) #this only runs if there was errors
@@ -83,8 +80,8 @@ def load_logged_in_user(): #set the global user variable if a user is logged in
         g.stateint = None
     else:
         try:
-            g.user = get_user_by_id(user_id) #if user is logged in store the user info in the global user var
-            g.stateint = get_role(g.user["role_id"])["allowed_states"] #store their allowed states in global stateint
+            g.user = db.get_user_by_id(user_id) #if user is logged in store the user info in the global user var
+            g.stateint = db.get_role(g.user["role_id"])["allowed_states"] #store their allowed states in global stateint
         except:
             g.user = None
             g.stateint = None
@@ -93,13 +90,13 @@ def load_logged_in_user(): #set the global user variable if a user is logged in
 
 def check_activity(): 
     if g.user is not None: #if user is logged in
-        lastactive = get_user_by_id(g.user["user_id"])['last_active'] #get last active time from db
+        lastactive = db.get_user_by_id(g.user["user_id"])['last_active'] #get last active time from db
         if lastactive is None:
             return redirect(url_for('auth.logout'))
-        timeSince = date_delta(lastactive)
+        timeSince = db.date_delta(lastactive)
         
         if timeSince.seconds < 600 : #if last active time is less than 10 minutes
-            return update_activity(g.user["user_id"]) #update last active time in db to now
+            return db.update_activity(g.user["user_id"]) #update last active time in db to now
         
         session.clear() #otherwise clear session to logout user
         load_logged_in_user()
@@ -129,7 +126,7 @@ def login_required(view): #decorator to require login to access page
 def manager_login_required(view): #decorator to require manager login to access page
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if not check_state(g.stateint, 10): # only roles with manage users state can view this page
+        if not db.check_state(g.stateint, 10): # only roles with manage users state can view this page
             return abort(403) # abort with 403 forbidden
         return view(**kwargs)
     return wrapped_view
