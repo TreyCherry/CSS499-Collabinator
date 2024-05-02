@@ -10,7 +10,7 @@ def create_app():
         SECRET_KEY='091959f559dd2b83ca2a22bf67709c3d26d04b90585c699b231f96549f08d9e7',
         DATABASE=os.path.join(app.instance_path, 'collabinator.sqlite'),
         UPLOAD_FOLDER=os.path.join(app.instance_path, 'documents'),
-        MAX_CONTENT_LENGTH = 50 * 1024 * 1024 #max file upload size 50MB
+        MAX_CONTENT_LENGTH = 20 * 1024 * 1024 #max file upload size 20MB
     )
 
     #make sure the instance folder exists
@@ -59,8 +59,8 @@ def create_app():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
     @app.errorhandler(413) #error handler for uploaded file exceeding config limit
-    def file_too_large():
-        flash("File too large. Maximum file size is 50MB.")
-        return redirect(url_for('index'))
+    def file_too_large(error):
+        flash("File too large. Maximum file size is 20MB.")
+        return redirect(url_for('index'), code=413)
 
     return app
