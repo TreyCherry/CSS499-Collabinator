@@ -60,7 +60,7 @@ def create_app():
 
     @app.errorhandler(413) #error handler for uploaded file exceeding config limit
     def file_too_large(error):
-        flash("File too large. Maximum file size is 20MB.")
+        flash("File too large. Maximum file size is 50MB.")
         return redirect(url_for('index'))
 
     return app
