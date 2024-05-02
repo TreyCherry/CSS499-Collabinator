@@ -131,21 +131,21 @@ def viewResponses():
     link = url_for('docs.viewResponses') + "?commentID=" + commentID #make link for the comment
 
     if request.method == 'POST': #if the form is submitted
-        resolveButton = request.form.get("resolve")
-        if resolveButton is not None:
+        resolveButton = request.form.get("resolve") #check if the form containing the resolve button was submitted
+        if resolveButton is not None: #if the post was from the resolve button
             if comment['resolved'] == 2 or not db.check_doc_reviewer(docID, g.user['user_id']) or not db.check_state(g.stateint, 6):
-                flash("You are not allowed to do that")
+                flash("You are not allowed to do that") #do not allow this if not allowed
                 return redirect(link)
             
-            db.mark_resolved(commentID, 2)
-            comtext = "%.10s" % comment['comment']
-            if comtext != comment['comment']:
-                comtext += "..."
+            db.mark_resolved(commentID, 2) #mark the comment as resolved
+            comtext = "%.10s" % comment['comment'] #get the first 10 characters of the comment
+            if comtext != comment['comment']: #if the comment is longer than 10 characters
+                comtext += "..." #add ellipses
             message = make_alert_message("comment_resolved", first_name=db.get_user_by_id(comment['author_id'])["first_name"], \
-                document_name=doc["document_name"], comment_text=comtext)
-            docLink = url_for('docs.viewDocument') + "?docID=" + str(docID)
-            db.add_alert_by_doc_reviewers(docID, message, docLink)
-            flash("Comment marked as resolved")
+                document_name=doc["document_name"], comment_text=comtext) #generate the message for the alert based on the comment
+            docLink = url_for('docs.viewDocument') + "?docID=" + str(docID) #get link to the docment
+            db.add_alert_by_doc_reviewers(docID, message, docLink) #send the alert to doc reviewers
+            flash("Comment marked as resolved") #flash success
 
             if db.check_all_resolved(docID): #if all comments resolved
                 db.set_doc_state(docID, 7) #mark document as all resolved
@@ -154,19 +154,21 @@ def viewResponses():
 
             return redirect(docLink)
 
+        #otherwise this form is for adding a response
+
         if comment['resolved'] == 2 or not db.check_doc_reviewer(docID, g.user['user_id']) or not db.check_state(g.stateint, 5):
-            flash("Unable to add response")
+            flash("Unable to add response") #do not allow this if not allowed (no perms or comment resolved)
             return redirect(link)
         
-        response = request.form.get("response")
+        response = request.form.get("response") #get new response being submitted
         if not response or response == "":
-            flash("Response cannot be empty")
+            flash("Response cannot be empty") #do not allow empty or nonexistent responses
             return redirect(link)
         
-        db.add_response(commentID, g.user["user_id"], response)
-        message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=doc["document_name"])
+        db.add_response(commentID, g.user["user_id"], response) #add the response
+        message = make_alert_message("new_response", user_name=g.user["first_name"], document_name=doc["document_name"]) 
         
-        db.add_alert_by_doc_reviewers(docID, message, link)
+        db.add_alert_by_doc_reviewers(docID, message, link) #make an alert for the response to doc reviewers
 
         if comment["resolved"] != 1: #if comment not already marked as replied, mark it
             db.mark_resolved(commentID, 1)
@@ -211,23 +213,23 @@ def viewDocument():
     selectedReviewers = db.get_doc_reviewers(docID)
     reviewers = None
     roleNames = None
-    if docstate >= 3:
+    if docstate >= 3: #if document is at least approved for review
         reviewRoles = db.get_roles_by_states(*range(4,10)) #roles with permissions 4-9
-        reviewers = set()
-        roleNames = {}
-        for reviewRole in reviewRoles:
+        reviewers = set() #use a set so that there are no duplicates
+        roleNames = {} #dictionary where key=roleid and value=users full name
+        for reviewRole in reviewRoles: #fill the set and dictionary
             roleId = reviewRole["role_id"]
             roleNames[str(roleId)] = reviewRole["role_name"]
             users = db.get_users(roleId)
             for user in users:
                 reviewers.add(user)
-    comments = None
+    comments = None #initialize to none for doc rendering
     usernames = None
-    if docstate > 3:
-        comments = db.get_comments(docID)
-        if comments is not None:
+    if docstate > 3: #if doc has had review started
+        comments = db.get_comments(docID) #get the comments for the doc
+        if comments is not None: #if there are comments
             usernames = {}
-            for comment in comments:
+            for comment in comments: #get the usernames associated with each comment
                 authorUser = db.get_user_by_id(comment["author_id"])
                 usernames[str(comment["author_id"])] = authorUser["first_name"] + " " + authorUser["last_name"]
 
@@ -354,14 +356,14 @@ def upload_comment(doc, docID, docstate, comment, link): #upload a comment
     if docstate != 5:
         db.set_doc_state(docID, 5) #set the state of the document to comments added
 
-def close_comments(doc, docID, link):
-    db.resolve_all(docID)
-    db.set_doc_state(docID, 9)
-    message = make_alert_message("comments_closed", document_name=doc["document_name"])
-    db.add_alert_by_doc_reviewers(docID, message, link)
+def close_comments(doc, docID, link): #close comments
+    db.resolve_all(docID) #resolve all comments on the doc 
+    db.set_doc_state(docID, 9) #move the docstate to comments closed
+    message = make_alert_message("comments_closed", document_name=doc["document_name"]) 
+    db.add_alert_by_doc_reviewers(docID, message, link) #alert doc reviewers that the comments have been closed
 
-def close_review(doc, docID, link):
-    db.set_doc_state(docID, 10)
+def close_review(doc, docID, link): #close doc review
+    db.set_doc_state(docID, 10) #move doc state to 10
     message = make_alert_message("review_closed", document_name=doc["document_name"])
-    db.add_alert_by_doc_reviewers(docID, message, link)
-    db.clear_doc_reviewers(docID)
+    db.add_alert_by_doc_reviewers(docID, message, link) #alert the doc reviewers
+    db.clear_doc_reviewers(docID) #remove all doc reviewers for the document from the review
