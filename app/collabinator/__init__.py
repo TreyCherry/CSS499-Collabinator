@@ -59,7 +59,7 @@ def create_app():
         return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
     @app.errorhandler(413) #error handler for uploaded file exceeding config limit
-    def file_too_large(error):
+    def file_too_large():
         flash("File too large. Maximum file size is 50MB.")
         return redirect(url_for('index'))
 
