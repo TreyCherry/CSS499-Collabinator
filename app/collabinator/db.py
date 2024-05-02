@@ -405,13 +405,19 @@ def upload_file(file, author_id, existingDoc=None): #handle uploading a file fro
     return name #file upload succeeded
 
 def get_name_type(filename): #get both name without extension and 2 value file type
+    is_text = is_text_fmt(filename) #check if file should be converted to txt
+    
     name, ext = filename.rsplit('.', 1) #split filename by last '.'
+    
+
     if ext == 'txt':
         type = 0 # 0 is txt
     elif ext == 'pdf':
         type = 1 # 1 is pdf
+    elif not is_text:
+        type = 2 #if its not a text format at this point it needs to be converted to pdf (type 2 is convert to pdf)
     else:
-        type = 2 # 2 is other extension
+        type = 3 # otherwise just convert the file to txt
     return name, type #return both
 
 def get_filename(doc): #get file name and type from returned database row of document
